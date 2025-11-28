@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* color-scheme: light dark; */
+  background: #c3c3c3;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+@font-face {
+  font-family: jamolhari;
+  src: url("./fonts/Jomolhari/Jomolhari-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: inter-regular;
+  src: url("./fonts/Inter_28pt-Regular") format("truetype");
+}
+
+
+@keyframes slide {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide {
+  animation: slide 0.2s ease-out;
+}
+
+
+.sidebarHeight {
+  height: calc(100vh - 40px);
+  scrollbar-width: none; /* Firefox */
+}
+
+.elementStyleBox{
+  @apply flex gap-1 text-sm items-center border py-1 px-2 rounded border-gray-400 text-gray-700;
+}
+
+.inputStyle{
+  @apply border border-gray-400 bg-gray-200 outline-none px-2 placeholder:text-sm py-1
+}
+
+.button{
+  @apply text-[#60b6ad] border text-sm border-[#60b6ad] bg-white px-4 py-1 rounded-md hover:bg-[#4ea19b] hover:text-white cursor-pointer transition-colors shadow-sm shadow-gray-400;
+}
+.selectedButton{
+  @apply text-white border text-sm border-[#60b6ad] bg-[#60b6ad] px-4 py-1 rounded-md hover:bg-[#4ea19b] hover:text-white cursor-pointer transition-colors;
+}
+
+.inputField{
+  @apply placeholder:font-thin placeholder:text-sm bg-white border border-[#60b6ad] rounded-md px-4 py-1 text-gray-700 focus:outline-none;
+}
+
+.selectList{
+  @apply bg-white border border-[#60b6ad] rounded-md px-4 py-1 text-gray-700 focus:outline-none font-thin text-sm;
+}
