@@ -7,6 +7,7 @@ import ProtectedRoute from './services/protectedRoute.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import AdvanceSetting from './pages/AdvanceSetting.jsx'
 import FormCanvas from './components/Canvas/FormCanvas.jsx'
+import TestCanvas from './components/Canvas/TestCanvas.jsx'
 
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
         <Route path='/home' element={<Dashboard/>}></Route>
         <Route path='/advance-setting' element={<AdvanceSetting/>}></Route>
         <Route path='/canvas' element={<FormCanvas/>}></Route>
+        <Route path='/test' element={<TestCanvas/>}></Route>
 
 
         <Route path='*' element={<NotFound/>}></Route>

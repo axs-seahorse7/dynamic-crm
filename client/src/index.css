@@ -58,6 +58,9 @@
 .button{
   @apply text-[#60b6ad] border text-sm border-[#60b6ad] bg-white px-4 py-1 rounded-md hover:bg-[#4ea19b] hover:text-white cursor-pointer transition-colors shadow-sm shadow-gray-400;
 }
+.buttonStyle{
+  @apply flex justify-between text-gray-600 border text-sm border-gray-300 bg-white px-4 py-1 rounded-md hover:bg-[#4ea19b] hover:text-white cursor-pointer transition-colors shadow-sm shadow-gray-400;
+}
 .selectedButton{
   @apply text-white border text-sm border-[#60b6ad] bg-[#60b6ad] px-4 py-1 rounded-md hover:bg-[#4ea19b] hover:text-white cursor-pointer transition-colors;
 }
