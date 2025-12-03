@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
+import ReactDOM from 'react-dom'
+import { Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, Palette, RefreshCw, Type, Ruler } from 'lucide-react'
 
 const TestCanvas = () => {
   const [elements, setElements] = useState([])
@@ -24,11 +26,32 @@ const TestCanvas = () => {
   const [draggedLayer, setDraggedLayer] = useState(null)
   const [dragOverIndex, setDragOverIndex] = useState(null)
   const [showOptionsDropdown, setShowOptionsDropdown] = useState(false)
+  const [showElementTypeDropdown, setShowElementTypeDropdown] = useState(false)
+  const elementTypeBtnRef = useRef(null)
+  const [elementTypePos, setElementTypePos] = useState(null)
+  const elementTypeDropdownRef = useRef(null)
+  // Properties panel draggable state
+  const [propsPos, setPropsPos] = useState({ x: null, y: null })
+  const [isDraggingProps, setIsDraggingProps] = useState(false)
+  const [propsDragStart, setPropsDragStart] = useState({ x: 0, y: 0 })
+  // refs to support constrained resizing (keep aspect ratio when Shift pressed)
+  const resizeStartRef = useRef(null)
+  const resizeMouseStartRef = useRef(null)
+
+  // computed currently-selected element (move before effects that reference it)
+  const selectedElement = selectedIds.length === 1 ? elements.find(el => el.id === selectedIds[0]) : null
 
   useEffect(() => {
     if (canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect()
       setCanvasOffset({ x: rect.left, y: rect.top })
+    }
+  }, [])
+
+  // initialize canvas height to viewport height so canvas is effectively `h-screen`
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCanvasHeight(window.innerHeight)
     }
   }, [])
 
@@ -58,6 +81,105 @@ const TestCanvas = () => {
       document.removeEventListener('mouseup', handleGlobalMouseUp)
     }
   }, [isDraggingSidebar, sidebarDragStart])
+
+  // Keyboard shortcuts: Ctrl/Cmd + B/I/U/S/D and Delete key (Delete only, not Backspace; not when in edit mode)
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      const ctrl = e.ctrlKey || e.metaKey
+      if (ctrl && e.key.toLowerCase() === 'b') {
+        e.preventDefault()
+        if (!editingElement) toggleBold()
+      }
+      if (ctrl && e.key.toLowerCase() === 'i') {
+        e.preventDefault()
+        if (!editingElement) toggleItalic()
+      }
+      if (ctrl && e.key.toLowerCase() === 'u') {
+        e.preventDefault()
+        if (!editingElement) {
+          toggleTextDecoration('underline')
+        }
+      }
+      if (ctrl && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        if (!editingElement) {
+          toggleTextDecoration('line-through')
+        }
+      }
+      if (ctrl && e.key.toLowerCase() === 'd') {
+        e.preventDefault()
+        if (!editingElement) {
+          duplicateSelected()
+        }
+      }
+      // Only Delete key deletes (not Backspace), and only when no element is in edit mode
+      if (e.key === 'Delete' && !editingElement) {
+        e.preventDefault()
+        deleteSelected()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [selectedIds, selectedElement, elements, editingElement])
+
+  // initialize properties panel default position and keep it inside viewport on resize
+  useEffect(() => {
+    const panelW = 256 // matches w-64
+    const defaultX = Math.max(8, window.innerWidth - panelW - 16)
+    const defaultY = 80
+    setPropsPos(prev => ({ x: prev.x === null ? defaultX : prev.x, y: prev.y === null ? defaultY : prev.y }))
+
+    const handleResize = () => {
+      setPropsPos(prev => {
+        const curX = prev.x === null ? Math.max(8, window.innerWidth - panelW - 16) : prev.x
+        const curY = prev.y === null ? defaultY : prev.y
+        return {
+          x: Math.max(0, Math.min(curX, window.innerWidth - panelW)),
+          y: Math.max(0, Math.min(curY, window.innerHeight - 40))
+        }
+      })
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Drag handlers for properties panel
+  useEffect(() => {
+    const handleDocMouseMove = (e) => {
+      if (!isDraggingProps) return
+      const panelW = 256
+      const panelH = Math.max(200, window.innerHeight - 40)
+      const newX = e.clientX - propsDragStart.x
+      const newY = e.clientY - propsDragStart.y
+      const clampedX = Math.max(0, Math.min(newX, window.innerWidth - panelW))
+      const clampedY = Math.max(0, Math.min(newY, window.innerHeight - 40))
+      setPropsPos({ x: clampedX, y: clampedY })
+    }
+
+    const handleDocMouseUp = () => {
+      if (isDraggingProps) setIsDraggingProps(false)
+    }
+
+    if (isDraggingProps) {
+      document.addEventListener('mousemove', handleDocMouseMove)
+      document.addEventListener('mouseup', handleDocMouseUp)
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleDocMouseMove)
+      document.removeEventListener('mouseup', handleDocMouseUp)
+    }
+  }, [isDraggingProps, propsDragStart])
+
+  const handlePropsMouseDown = (e) => {
+    // start dragging the properties panel
+    e.stopPropagation()
+    const rect = e.currentTarget.parentElement.getBoundingClientRect()
+    setPropsDragStart({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+    setIsDraggingProps(true)
+  }
 
   const createElementAtPosition = (x, y, width, height) => {
     const newElement = {
@@ -138,10 +260,17 @@ const TestCanvas = () => {
     setIsResizing(true)
     setResizeHandle(handle)
     const rect = canvasRef.current.getBoundingClientRect()
-    setDragStart({
-      x: (e.clientX - rect.left - 50) / zoom,
-      y: (e.clientY - rect.top - 50) / zoom
-    })
+    const mouseX = (e.clientX - rect.left - 50) / zoom
+    const mouseY = (e.clientY - rect.top - 50) / zoom
+    setDragStart({ x: mouseX, y: mouseY })
+    resizeMouseStartRef.current = { x: mouseX, y: mouseY }
+    // store original dimensions for uniform scaling
+    if (selectedIds.length === 1) {
+      const el = elements.find(it => it.id === selectedIds[0])
+      if (el) {
+        resizeStartRef.current = { width: el.width, height: el.height, x: el.x, y: el.y }
+      }
+    }
   }
 
   const handleMouseMove = (e) => {
@@ -177,34 +306,72 @@ const TestCanvas = () => {
 
     if (isResizing && selectedIds.length === 1) {
       const selectedId = selectedIds[0]
+      const resizeStart = resizeStartRef.current
+      const mouseStart = resizeMouseStartRef.current
+      
+      if (!resizeStart || !mouseStart) return
+
       setElements(elements.map(el => {
         if (el.id === selectedId) {
-          const deltaX = mouseX - dragStart.x
-          const deltaY = mouseY - dragStart.y
+          const deltaX = mouseX - mouseStart.x
+          const deltaY = mouseY - mouseStart.y
 
           let updates = {}
 
-          if (resizeHandle.includes('e')) {
-            updates.width = Math.max(20, el.width + deltaX)
-          }
-          if (resizeHandle.includes('s')) {
-            updates.height = Math.max(20, el.height + deltaY)
-          }
-          if (resizeHandle.includes('w')) {
-            updates.width = Math.max(20, el.width - deltaX)
-            updates.x = el.x + deltaX
-          }
-          if (resizeHandle.includes('n')) {
-            updates.height = Math.max(20, el.height - deltaY)
-            updates.y = el.y + deltaY
+          // If Shift is pressed, maintain aspect ratio (uniform scale)
+          if (e.shiftKey) {
+            const origW = resizeStart.width
+            const origH = resizeStart.height
+
+            // compute scale factor based on primary handle direction
+            let s = 1
+            if (resizeHandle.includes('e')) {
+              s = (origW + deltaX) / origW
+            } else if (resizeHandle.includes('w')) {
+              s = (origW - deltaX) / origW
+            } else if (resizeHandle.includes('s')) {
+              s = (origH + deltaY) / origH
+            } else if (resizeHandle.includes('n')) {
+              s = (origH - deltaY) / origH
+            }
+            s = Math.max(0.05, s)
+
+            const newW = Math.max(20, Math.round(origW * s))
+            const newH = Math.max(20, Math.round(origH * s))
+
+            updates.width = newW
+            updates.height = newH
+
+            // adjust position when resizing from west or north
+            if (resizeHandle.includes('w')) {
+              updates.x = resizeStart.x + (origW - newW)
+            }
+            if (resizeHandle.includes('n')) {
+              updates.y = resizeStart.y + (origH - newH)
+            }
+          } else {
+            // Freeform axis-aligned resize (both directions)
+            if (resizeHandle.includes('e')) {
+              updates.width = Math.max(20, resizeStart.width + deltaX)
+            }
+            if (resizeHandle.includes('s')) {
+              updates.height = Math.max(20, resizeStart.height + deltaY)
+            }
+            if (resizeHandle.includes('w')) {
+              updates.width = Math.max(20, resizeStart.width - deltaX)
+              updates.x = resizeStart.x + deltaX
+            }
+            if (resizeHandle.includes('n')) {
+              updates.height = Math.max(20, resizeStart.height - deltaY)
+              updates.y = resizeStart.y + deltaY
+            }
           }
 
           return { ...el, ...updates }
         }
         return el
       }))
-
-      setDragStart({ x: mouseX, y: mouseY })
+      // do not update dragStart here; we use initial mouse start for deltas
     }
   }
 
@@ -295,6 +462,61 @@ const TestCanvas = () => {
     }))
   }
 
+  const toggleTextDecoration = (decoration) => {
+    const firstSel = elements.find(el => selectedIds.includes(el.id))
+    if (!firstSel) return
+    let current = firstSel.textDecoration || ''
+    // normalize: remove 'none' token if present
+    let parts = current.split(' ').map(p => p.trim()).filter(Boolean).filter(p => p !== 'none')
+    const has = parts.includes(decoration)
+    let newValue = ''
+    if (has) {
+      parts = parts.filter(p => p !== decoration)
+      newValue = parts.length === 0 ? 'none' : parts.join(' ')
+    } else {
+      parts.push(decoration)
+      newValue = parts.join(' ')
+    }
+    updateProperty('textDecoration', newValue)
+  }
+
+  const toggleBold = () => {
+    if (selectedIds.length === 0) return
+    const allBold = elements.filter(el => selectedIds.includes(el.id)).every(el => el.fontWeight === 'bold')
+    updateProperty('fontWeight', allBold ? 'normal' : 'bold')
+  }
+
+  const toggleItalic = () => {
+    if (selectedIds.length === 0) return
+    const allItalic = elements.filter(el => selectedIds.includes(el.id)).every(el => el.fontStyle === 'italic')
+    updateProperty('fontStyle', allItalic ? 'normal' : 'italic')
+  }
+
+  // active state helpers for toolbar buttons
+  const isBoldActive = selectedIds.length > 0 && elements.filter(el => selectedIds.includes(el.id)).every(el => el.fontWeight === 'bold')
+  const isItalicActive = selectedIds.length > 0 && elements.filter(el => selectedIds.includes(el.id)).every(el => el.fontStyle === 'italic')
+  const isUnderlineActive = selectedIds.length > 0 && elements.filter(el => selectedIds.includes(el.id)).every(el => (el.textDecoration || '').split(' ').includes('underline'))
+  const isStrikeActive = selectedIds.length > 0 && elements.filter(el => selectedIds.includes(el.id)).every(el => (el.textDecoration || '').split(' ').includes('line-through'))
+
+  const resetStyles = () => {
+    if (!selectedElement) return
+    const defaults = {
+      text: selectedElement.text,
+      fontSize: 14,
+      fontFamily: 'Arial',
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      textDecoration: 'none',
+      color: '#000000',
+      backgroundColor: '#ffffff',
+      borderColor: '#000000',
+      borderWidth: 2,
+      borderRadius: 4,
+      textAlign: 'left'
+    }
+    Object.entries(defaults).forEach(([k, v]) => updateProperty(k, v))
+  }
+
   const createGroup = () => {
     if (selectedIds.length > 1) {
       const groupId = `group-${nextGroupId}`
@@ -318,7 +540,10 @@ const TestCanvas = () => {
     }))
   }
 
-  const selectedElement = selectedIds.length === 1 ? elements.find(el => el.id === selectedIds[0]) : null
+  // layout helpers
+  const layersOnRight = selectedIds.length > 0 // when properties on left are open, move layers to right
+  const scaledWidth = `${100 / zoom}%`
+  const scaledHeight = `${canvasHeight / zoom}px`
 
   const handleElementDoubleClick = (e, id) => {
     e.stopPropagation()
@@ -500,6 +725,27 @@ const TestCanvas = () => {
         
         {isSelected && selectedIds.length === 1 && (
           <>
+            {/* Center edge handles for horizontal/vertical resizing */}
+            <div
+              onMouseDown={(e) => handleResizeMouseDown(e, 'n')}
+              className='absolute w-2 h-2 bg-white border-2 border-blue-500 rounded-full cursor-n-resize'
+              style={{ top: '-4px', left: `${element.width / 2 - 4}px` }}
+            />
+            <div
+              onMouseDown={(e) => handleResizeMouseDown(e, 's')}
+              className='absolute w-2 h-2 bg-white border-2 border-blue-500 rounded-full cursor-s-resize'
+              style={{ bottom: '-4px', left: `${element.width / 2 - 4}px` }}
+            />
+            <div
+              onMouseDown={(e) => handleResizeMouseDown(e, 'w')}
+              className='absolute w-2 h-2 bg-white border-2 border-blue-500 rounded-full cursor-w-resize'
+              style={{ left: '-4px', top: `${element.height / 2 - 4}px` }}
+            />
+            <div
+              onMouseDown={(e) => handleResizeMouseDown(e, 'e')}
+              className='absolute w-2 h-2 bg-white border-2 border-blue-500 rounded-full cursor-e-resize'
+              style={{ right: '-4px', top: `${element.height / 2 - 4}px` }}
+            />
             <div
               onMouseDown={(e) => handleResizeMouseDown(e, 'nw')}
               className='absolute w-2 h-2 bg-white border-2 border-blue-500 rounded-full cursor-nw-resize'
@@ -529,7 +775,7 @@ const TestCanvas = () => {
   return (
     <div className='w-full h-screen flex flex-col bg-white'>
       {/* Navbar with centered toolbox and right actions */}
-      <div className=' h-12 py-5 flex items-center shadow-sm relative'>
+      <div className=' h-14 py-5 flex items-center border-b border-gray-200 relative'>
         <div className='absolute left-1/2 transform -translate-x-1/2'>
           <div className='flex items-center gap-3 bg-gray-200 px-2 py-1 rounded-full'>
           <button
@@ -553,6 +799,46 @@ const TestCanvas = () => {
               <rect x="3" y="3" width="18" height="18" strokeWidth={2} rx="2" />
             </svg>
           </button>
+
+          {/* Element type selector in navbar (applies to selected elements) */}
+          <div className='relative '>
+            <button
+              ref={elementTypeBtnRef}
+              onClick={() => {
+                const next = !showElementTypeDropdown
+                setShowElementTypeDropdown(next)
+                if (next && elementTypeBtnRef.current) {
+                  const rect = elementTypeBtnRef.current.getBoundingClientRect()
+                  // center the dropdown under the button
+                  const width = 176 // w-44
+                  const left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.left + rect.width / 2 - width / 2))
+                  const top = rect.bottom + 8
+                  setElementTypePos({ left, top })
+                }
+              }}
+              className='p-2 rounded-full hover:bg-gray-200 transition-colors cursor-pointer'
+              title='Change Element Type'
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" />
+              </svg>
+            </button>
+
+            {showElementTypeDropdown && elementTypePos && typeof document !== 'undefined' && ReactDOM.createPortal(
+              <div ref={elementTypeDropdownRef} style={{ position: 'fixed', left: elementTypePos.left, top: elementTypePos.top, width: 176, zIndex: 2147483647 }}>
+                <div className='bg-white border border-gray-300 rounded-lg shadow-lg'>
+                  <button onClick={() => { changeElementType('box'); setShowElementTypeDropdown(false) }} className='w-full px-3 py-2 text-left hover:bg-gray-50'>📦 Box</button>
+                  <button onClick={() => { changeElementType('input'); setShowElementTypeDropdown(false) }} className='w-full px-3 py-2 text-left hover:bg-gray-50'>📝 Input</button>
+                  <button onClick={() => { changeElementType('text'); setShowElementTypeDropdown(false) }} className='w-full px-3 py-2 text-left hover:bg-gray-50'>📄 Text</button>
+                  <button onClick={() => { changeElementType('dropdown'); setShowElementTypeDropdown(false) }} className='w-full px-3 py-2 text-left hover:bg-gray-50'>📋 Dropdown</button>
+                  <button onClick={() => { changeElementType('radio'); setShowElementTypeDropdown(false) }} className='w-full px-3 py-2 text-left hover:bg-gray-50'>🔘 Radio</button>
+                  <button onClick={() => { changeElementType('toggle'); setShowElementTypeDropdown(false) }} className='w-full px-3 py-2 text-left hover:bg-gray-50'>🎚 Toggle</button>
+                  <button onClick={() => { changeElementType('button'); setShowElementTypeDropdown(false) }} className='w-full px-3 py-2 text-left hover:bg-gray-50'>🔲 Button</button>
+                </div>
+              </div>,
+              document.body
+            )}
+          </div>
 
           {selectedIds.length > 0 && (
             <>
@@ -594,6 +880,37 @@ const TestCanvas = () => {
 
           <div className="w-px h-6 bg-gray-300"></div>
 
+          <div className='flex items-center gap-2'>
+            <button onClick={toggleBold} className={`p-2 rounded-full hover:bg-gray-300 ${isBoldActive ? 'bg-gray-100' : ''}`} title='Bold'>
+              <Bold size={16} />
+            </button>
+            <button onClick={toggleItalic} className={`p-2 rounded-full hover:bg-gray-300 ${isItalicActive ? 'bg-gray-100' : ''}`} title='Italic'>
+              <Italic size={16} />
+            </button>
+            <button onClick={() => toggleTextDecoration('underline')} className={`p-2 rounded-full hover:bg-gray-300 ${isUnderlineActive ? 'bg-gray-100' : ''}`} title='Underline'>
+              <Underline size={16} />
+            </button>
+            <button onClick={() => toggleTextDecoration('line-through')} className={`p-2 rounded-full hover:bg-gray-300 ${isStrikeActive ? 'bg-gray-100' : ''}`} title='Strike'>
+              <Strikethrough size={16} />
+            </button>
+          </div>
+
+          <div className="w-px h-6 bg-gray-300"></div>
+
+          <button
+            onClick={() => setShowPageModal(true)}
+            className='p-2 rounded-full hover:bg-gray-200'
+            title="Page Settings"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+          </button>
+          </div>
+        </div>
+
+        {/* Right Side Action Buttons */}
+        <div className='absolute right-3 flex items-center gap-2'>
           <button
             onClick={() => setZoom(Math.max(0.1, zoom - 0.1))}
             className='p-2 rounded-full hover:bg-gray-200'
@@ -614,22 +931,6 @@ const TestCanvas = () => {
             </svg>
           </button>
 
-          <div className="w-px h-6 bg-gray-300"></div>
-
-          <button
-            onClick={() => setShowPageModal(true)}
-            className='p-2 rounded-full hover:bg-gray-200'
-            title="Page Settings"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-            </svg>
-          </button>
-          </div>
-        </div>
-
-        {/* Right Side Action Buttons */}
-        <div className='absolute right-3 flex items-center gap-2'>
           <button
             onClick={() => alert('Post to Feed functionality coming soon!')}
             className='px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center gap-1.5 text-sm'
@@ -653,7 +954,7 @@ const TestCanvas = () => {
             </button>
 
             {showOptionsDropdown && (
-              <div className='absolute right-0 top-full mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-50'>
+              <div className='absolute right-0 top-full mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-40'>
                 <button
                   onClick={() => {
                     alert('Export functionality coming soon!')
@@ -701,7 +1002,7 @@ const TestCanvas = () => {
 
       {/* Page Settings Modal */}
       {showPageModal && (
-        <div className='fixed inset-0 flex items-center justify-center z-50 pointer-events-none'>
+        <div className='fixed inset-0 flex items-center justify-center z-40 pointer-events-none'>
           <div className='bg-white rounded-lg shadow-2xl p-6 w-96 pointer-events-auto border-2 border-gray-300'>
             <h2 className='text-xl font-semibold mb-4'>Page Settings</h2>
             
@@ -749,285 +1050,9 @@ const TestCanvas = () => {
       )}
 
       <div className='flex flex-1 overflow-hidden relative'>
-        {/* Left Sidebar - Element Type Selector (Draggable) */}
-        {selectedIds.length > 0 && (
-          <div 
-            className='absolute bg-white border border-gray-300 rounded-lg shadow-lg overflow-auto z-40'
-            style={{
-              left: `${leftSidebarPos.x}px`,
-              top: `${leftSidebarPos.y}px`,
-              width: '256px',
-              maxHeight: '80vh'
-            }}
-          >
-            <div 
-              className='flex items-center justify-between mb-3 cursor-move bg-gray-100 px-4 py-2 rounded-t-lg sticky top-0'
-              onMouseDown={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                setIsDraggingSidebar(true)
-                setSidebarDragStart({
-                  x: e.clientX - leftSidebarPos.x,
-                  y: e.clientY - leftSidebarPos.y
-                })
-              }}
-            >
-              <h3 className='font-semibold text-base'>Properties</h3>
-              <button
-                onClick={() => setSelectedIds([])}
-                className='text-gray-500 hover:text-gray-700'
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className='p-4'>
-              <h3 className='font-semibold text-base mb-3'>Element Type</h3>
-            
-            <div className='space-y-2'>
-              <button
-                onClick={() => changeElementType('box')}
-                className={`w-full px-3 py-2 text-left rounded border ${selectedElement?.elementType === 'box' ? 'bg-blue-50 border-blue-500' : 'border-gray-300 hover:bg-gray-50'}`}
-              >
-                📦 Box
-              </button>
-              <button
-                onClick={() => changeElementType('input')}
-                className={`w-full px-3 py-2 text-left rounded border ${selectedElement?.elementType === 'input' ? 'bg-blue-50 border-blue-500' : 'border-gray-300 hover:bg-gray-50'}`}
-              >
-                📝 Input Field
-              </button>
-              <button
-                onClick={() => changeElementType('text')}
-                className={`w-full px-3 py-2 text-left rounded border ${selectedElement?.elementType === 'text' ? 'bg-blue-50 border-blue-500' : 'border-gray-300 hover:bg-gray-50'}`}
-              >
-                📄 Text Label
-              </button>
-              <button
-                onClick={() => changeElementType('dropdown')}
-                className={`w-full px-3 py-2 text-left rounded border ${selectedElement?.elementType === 'dropdown' ? 'bg-blue-50 border-blue-500' : 'border-gray-300 hover:bg-gray-50'}`}
-              >
-                📋 Dropdown
-              </button>
-              <button
-                onClick={() => changeElementType('radio')}
-                className={`w-full px-3 py-2 text-left rounded border ${selectedElement?.elementType === 'radio' ? 'bg-blue-50 border-blue-500' : 'border-gray-300 hover:bg-gray-50'}`}
-              >
-                🔘 Radio Button
-              </button>
-              <button
-                onClick={() => changeElementType('toggle')}
-                className={`w-full px-3 py-2 text-left rounded border ${selectedElement?.elementType === 'toggle' ? 'bg-blue-50 border-blue-500' : 'border-gray-300 hover:bg-gray-50'}`}
-              >
-                🎚️ Toggle Switch
-              </button>
-              <button
-                onClick={() => changeElementType('button')}
-                className={`w-full px-3 py-2 text-left rounded border ${selectedElement?.elementType === 'button' ? 'bg-blue-50 border-blue-500' : 'border-gray-300 hover:bg-gray-50'}`}
-              >
-                🔲 Button
-              </button>
-            </div>
-
-            {selectedIds.length === 1 && selectedElement && (
-              <>
-                <h3 className='font-semibold text-base mb-3 mt-6'>Styles</h3>
-                
-                <div className='space-y-3'>
-                  <div>
-                    <label className='block text-xs font-medium mb-1'>Text</label>
-                    <input
-                      type='text'
-                      value={selectedElement.text}
-                      onChange={(e) => updateProperty('text', e.target.value)}
-                      className='w-full px-2 py-1 text-sm border rounded'
-                    />
-                  </div>
-
-                  <div className='grid grid-cols-2 gap-2'>
-                    <div>
-                      <label className='block text-xs font-medium mb-1'>Font Size</label>
-                      <input
-                        type='number'
-                        value={selectedElement.fontSize}
-                        onChange={(e) => updateProperty('fontSize', parseInt(e.target.value) || 12)}
-                        className='w-full px-2 py-1 text-sm border rounded'
-                      />
-                    </div>
-                    <div>
-                      <label className='block text-xs font-medium mb-1'>Border</label>
-                      <input
-                        type='number'
-                        value={selectedElement.borderWidth}
-                        onChange={(e) => updateProperty('borderWidth', parseInt(e.target.value) || 0)}
-                        className='w-full px-2 py-1 text-sm border rounded'
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className='block text-xs font-medium mb-1'>Font Family</label>
-                    <select
-                      value={selectedElement.fontFamily}
-                      onChange={(e) => updateProperty('fontFamily', e.target.value)}
-                      className='w-full px-2 py-1 text-sm border rounded'
-                    >
-                      <option value="Arial">Arial</option>
-                      <option value="Times New Roman">Times New Roman</option>
-                      <option value="Courier New">Courier New</option>
-                      <option value="Georgia">Georgia</option>
-                      <option value="Verdana">Verdana</option>
-                    </select>
-                  </div>
-
-                  <div className='flex gap-2'>
-                    <button
-                      onClick={() => updateProperty('fontWeight', selectedElement.fontWeight === 'bold' ? 'normal' : 'bold')}
-                      className={`flex-1 px-2 py-1 text-sm font-bold border rounded ${selectedElement.fontWeight === 'bold' ? 'bg-blue-500 text-white' : 'bg-white'}`}
-                    >
-                      B
-                    </button>
-                    <button
-                      onClick={() => updateProperty('fontStyle', selectedElement.fontStyle === 'italic' ? 'normal' : 'italic')}
-                      className={`flex-1 px-2 py-1 text-sm italic border rounded ${selectedElement.fontStyle === 'italic' ? 'bg-blue-500 text-white' : 'bg-white'}`}
-                    >
-                      I
-                    </button>
-                    <button
-                      onClick={() => updateProperty('textDecoration', selectedElement.textDecoration === 'underline' ? 'none' : 'underline')}
-                      className={`flex-1 px-2 py-1 text-sm underline border rounded ${selectedElement.textDecoration === 'underline' ? 'bg-blue-500 text-white' : 'bg-white'}`}
-                    >
-                      U
-                    </button>
-                    <button
-                      onClick={() => updateProperty('textDecoration', selectedElement.textDecoration === 'line-through' ? 'none' : 'line-through')}
-                      className={`flex-1 px-2 py-1 text-sm line-through border rounded ${selectedElement.textDecoration === 'line-through' ? 'bg-blue-500 text-white' : 'bg-white'}`}
-                    >
-                      S
-                    </button>
-                  </div>
-
-                  <div>
-                    <label className='block text-xs font-medium mb-1'>Text Align</label>
-                    <div className='flex gap-2'>
-                      <button
-                        onClick={() => updateProperty('textAlign', 'left')}
-                        className={`flex-1 px-2 py-1 text-sm border rounded ${selectedElement.textAlign === 'left' ? 'bg-blue-500 text-white' : 'bg-white'}`}
-                        title="Align Left"
-                      >
-                        <svg className="w-4 h-4 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h8a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h8a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => updateProperty('textAlign', 'center')}
-                        className={`flex-1 px-2 py-1 text-sm border rounded ${selectedElement.textAlign === 'center' ? 'bg-blue-500 text-white' : 'bg-white'}`}
-                        title="Align Center"
-                      >
-                        <svg className="w-4 h-4 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm2 4a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm-2 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm2 4a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => updateProperty('textAlign', 'right')}
-                        className={`flex-1 px-2 py-1 text-sm border rounded ${selectedElement.textAlign === 'right' ? 'bg-blue-500 text-white' : 'bg-white'}`}
-                        title="Align Right"
-                      >
-                        <svg className="w-4 h-4 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm4 4a1 1 0 011-1h8a1 1 0 110 2H8a1 1 0 01-1-1zm-4 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm4 4a1 1 0 011-1h8a1 1 0 110 2H8a1 1 0 01-1-1z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className='grid grid-cols-2 gap-2'>
-                    <div>
-                      <label className='block text-xs font-medium mb-1'>Text Color</label>
-                      <input
-                        type='color'
-                        value={selectedElement.color}
-                        onChange={(e) => updateProperty('color', e.target.value)}
-                        className='w-full h-8 border rounded cursor-pointer'
-                      />
-                    </div>
-                    <div>
-                      <label className='block text-xs font-medium mb-1'>BG Color</label>
-                      <input
-                        type='color'
-                        value={selectedElement.backgroundColor}
-                        onChange={(e) => updateProperty('backgroundColor', e.target.value)}
-                        className='w-full h-8 border rounded cursor-pointer'
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className='block text-xs font-medium mb-1'>Border Color</label>
-                    <input
-                      type='color'
-                      value={selectedElement.borderColor}
-                      onChange={(e) => updateProperty('borderColor', e.target.value)}
-                      className='w-full h-8 border rounded cursor-pointer'
-                    />
-                  </div>
-
-                  <div>
-                    <label className='block text-xs font-medium mb-1'>Border Radius</label>
-                    <input
-                      type='number'
-                      value={selectedElement.borderRadius}
-                      onChange={(e) => updateProperty('borderRadius', parseInt(e.target.value) || 0)}
-                      className='w-full px-2 py-1 text-sm border rounded'
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-            </div>
-          </div>
-        )}
-
-        {/* Canvas */}
-        <div
-          ref={canvasRef}
-          className='flex-1 overflow-auto bg-gray-100 relative canvas-area'
-          onMouseDown={handleCanvasMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          style={{ cursor: tool === 'box' ? 'crosshair' : 'default' }}
-        >
-          <div
-            className='relative bg-white shadow-lg canvas-area'
-            style={{
-              width: `${3000 * zoom}px`,
-              height: `${canvasHeight * zoom}px`,
-              margin: '50px',
-              transform: `scale(${zoom})`,
-              transformOrigin: '0 0'
-            }}
-          >
-            {elements.map(element => renderElement(element))}
-            
-            {/* Drawing preview */}
-            {isDrawing && drawStart && dragStart.x && dragStart.y && (
-              <div
-                className='absolute border-2 border-blue-500 border-dashed bg-blue-50 bg-opacity-20 pointer-events-none'
-                style={{
-                  left: `${Math.min(drawStart.x, dragStart.x)}px`,
-                  top: `${Math.min(drawStart.y, dragStart.y)}px`,
-                  width: `${Math.abs(dragStart.x - drawStart.x)}px`,
-                  height: `${Math.abs(dragStart.y - drawStart.y)}px`,
-                }}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Right Sidebar - Layers Panel */}
-        <div className='w-64 bg-white border-l border-gray-300 p-4 overflow-auto'>
+        {/* Layers panel: fixed on left (w-52) */}
+        <div className='w-52 bg-white border-r border-gray-300 p-4 overflow-y-auto '>
           <h3 className='font-semibold text-base mb-3'>Layers</h3>
-          
           {elements.length === 0 ? (
             <div className='text-center text-gray-400 mt-8'>
               <p className='text-sm'>No elements yet</p>
@@ -1038,7 +1063,6 @@ const TestCanvas = () => {
               {groups.map(group => {
                 const groupElements = elements.filter(el => el.groupId === group.id)
                 if (groupElements.length === 0) return null
-                
                 return (
                   <div key={group.id} className='border rounded p-2 mb-2'>
                     <div className='flex items-center justify-between mb-1'>
@@ -1154,6 +1178,136 @@ const TestCanvas = () => {
             </div>
           )}
         </div>
+
+
+
+        {/* Canvas */}
+        <div
+          ref={canvasRef}
+          className='flex-1 border-l pb-4 border-gray-200 overflow-auto bg-gray-100 relative canvas-area'
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          style={{ cursor: tool === 'box' ? 'crosshair' : 'default', overflowX: 'hidden' }}
+        >
+          <div
+            className='relative bg-white shadow-lg canvas-area'
+            style={{
+              width: scaledWidth,
+              height: scaledHeight,
+              padding: '50px',
+              transform: `scale(${zoom})`,
+              transformOrigin: '0 0'
+            }}
+          >
+            {elements.map(element => renderElement(element))}
+
+            {/* Drawing preview */}
+            {isDrawing && drawStart && dragStart.x && dragStart.y && (
+              <div
+                className='absolute border-2 border-blue-500 border-dashed bg-blue-50 bg-opacity-20 pointer-events-none'
+                style={{
+                  left: `${Math.min(drawStart.x, dragStart.x)}px`,
+                  top: `${Math.min(drawStart.y, dragStart.y)}px`,
+                  width: `${Math.abs(dragStart.x - drawStart.x)}px`,
+                  height: `${Math.abs(dragStart.y - drawStart.y)}px`,
+                }}
+              />
+            )}
+          </div>
+        </div>
+        
+        {/* Properties panel: appears on right when an element is selected (now draggable) */}
+        {selectedIds.length > 0 && propsPos.x !== null && (
+          <div
+            className='fixed bg-white border rounded border-gray-300 p-4 pb-6 overflow-y-auto shadow-lg z-40'
+            style={{ left: propsPos.x, top: propsPos.y, width: 256, maxHeight: 'calc(100vh - 20px)' }}
+          >
+            <div onMouseDown={handlePropsMouseDown} className='cursor-move -mx-4 -mt-4 px-4 pt-3 pb-2 mb-3 flex items-center justify-between'>
+              <h3 className='font-semibold text-base'>Properties</h3>
+              <button onClick={() => setSelectedIds([])} className=' text-lg cursor-pointer hover:bg-gray-300 rounded-full h-6 w-6 flex items-center justify-center text-gray-500'><i class="ri-close-line"></i></button>
+            </div>
+            <div>
+              {selectedIds.length === 1 && selectedElement && (
+                <div className='mt-4'>
+                  <div className='flex items-center gap-4 mb-3'>
+                    <h4 className='font-medium tex mb-0'>Styles</h4>
+                    <div className='ml-auto text-xs text-gray-400 flex items-center gap-2'>
+                      <button onClick={resetStyles} title='Reset styles' className='flex items-center gap-1 px-2 py-1 border rounded text-xs text-red-600 hover:bg-gray-50'>
+                        <RefreshCw size={14} /> Reset
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className='space-y-3'>
+                    <div>
+                      <label className='block text-xs font-medium mb-1 flex items-center gap-2'><Type size={14} className='text-gray-500'/> Text</label>
+                      <input type='text' value={selectedElement.text} onChange={(e) => updateProperty('text', e.target.value)} className='w-full px-2 py-1 text-sm border rounded' />
+                    </div>
+
+                    <div className='grid grid-cols-2 gap-2'>
+                      <div>
+                        <label className='block text-xs font-medium mb-1 flex items-center gap-2'><Palette size={14} className='text-gray-500'/> Text Color</label>
+                        <input type='color' value={selectedElement.color || '#000000'} onChange={(e) => updateProperty('color', e.target.value)} className='w-full h-8 p-0 border rounded' />
+                      </div>
+                      <div>
+                        <label className='block text-xs font-medium mb-1 flex items-center gap-2'><Ruler size={14} className='text-gray-500'/> Background</label>
+                        <input type='color' value={selectedElement.backgroundColor || '#ffffff'} onChange={(e) => updateProperty('backgroundColor', e.target.value)} className='w-full h-8 p-0 border rounded' />
+                      </div>
+                    </div>
+
+                    <div className='grid grid-cols-2 gap-2 mt-2'>
+                      <div>
+                        <label className='block text-xs font-medium mb-1 flex items-center gap-2'><Palette size={14} className='text-gray-500'/> Border Color</label>
+                        <input type='color' value={selectedElement.borderColor || '#000000'} onChange={(e) => updateProperty('borderColor', e.target.value)} className='w-full h-8 p-0 border rounded' />
+                      </div>
+                      <div>
+                        <label className='block text-xs font-medium mb-1 flex items-center gap-2'><Ruler size={14} className='text-gray-500'/> Border Radius</label>
+                        <input type='number' value={selectedElement.borderRadius || 0} onChange={(e) => updateProperty('borderRadius', parseInt(e.target.value) || 0)} className='w-full px-2 py-1 text-sm border rounded' />
+                      </div>
+                    </div>
+
+                    <div className='flex items-center gap-2 mt-2'>
+                      <div>
+                        <label className='block text-xs font-medium mb-1 flex items-center gap-2'><Ruler size={14} className='text-gray-500'/> Border Width</label>
+                        <input type='number' value={selectedElement.borderWidth || 0} onChange={(e) => updateProperty('borderWidth', parseInt(e.target.value) || 0)} className='w-24 px-2 py-1 text-sm border rounded' />
+                      </div>
+                      <div className='ml-auto'>
+                        <label className='block text-xs font-medium mb-1'>Align</label>
+                        <div className='flex items-center gap-1'>
+                          <button onClick={() => updateProperty('textAlign', 'left')} className={`px-2 py-1 border rounded text-xs ${selectedElement.textAlign === 'left' ? 'bg-gray-100' : ''}`} title='Left'><AlignLeft size={14} /></button>
+                          <button onClick={() => updateProperty('textAlign', 'center')} className={`px-2 py-1 border rounded text-xs ${selectedElement.textAlign === 'center' ? 'bg-gray-100' : ''}`} title='Center'><AlignCenter size={14} /></button>
+                          <button onClick={() => updateProperty('textAlign', 'right')} className={`px-2 py-1 border rounded text-xs ${selectedElement.textAlign === 'right' ? 'bg-gray-100' : ''}`} title='Right'><AlignRight size={14} /></button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Formatting toolbar removed from Properties panel; use navbar controls instead */}
+
+                    <div className='grid grid-cols-2 gap-2'>
+                      <div>
+                        <label className='block text-xs font-medium mb-1'>Font Size</label>
+                        <input type='number' value={selectedElement.fontSize} onChange={(e) => updateProperty('fontSize', parseInt(e.target.value) || 12)} className='w-full px-2 py-1 text-sm border rounded' />
+                      </div>
+                      <div>
+                        <label className='block text-xs font-medium mb-1'>Font Family</label>
+                        <select value={selectedElement.fontFamily} onChange={(e) => updateProperty('fontFamily', e.target.value)} className='w-full px-2 py-1 text-sm border rounded'>
+                          <option value="Arial">Arial</option>
+                          <option value="Times New Roman">Times New Roman</option>
+                          <option value="Courier New">Courier New</option>
+                          <option value="Georgia">Georgia</option>
+                          <option value="Verdana">Verdana</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+        }
       </div>
     </div>
   )
