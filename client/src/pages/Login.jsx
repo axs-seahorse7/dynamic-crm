@@ -1,6 +1,31 @@
-import React from 'react'
+import {useState} from 'react'
+import axios from 'axios'
+import {useDispatch, useSelector} from 'react-redux'
+import {login} from '../store/authSlice.js'
+import { useNavigate } from 'react-router-dom'
 
 const Login = () => {
+    const  [User, setUser] = useState({})
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const { status, error } = useSelector((state) => state.auth);
+    
+    
+    const handleChange = (e) => {
+        const {name, value} = e.target;
+        setUser(prev => ({...prev, [name]: value}))
+    }
+
+    const  handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await dispatch(login(User)).unwrap();
+            navigate('/home');
+        } catch (error) {
+            console.log('Login failed:', error);
+        }
+    }
+
   return (
     <div className='flex w-full bg-[#F1F1F1]'>
         {/* Left side container */}
@@ -21,6 +46,8 @@ const Login = () => {
                 <i class="ri-mail-line text-[#435663]"></i>
                 <input
                     type="email"
+                    name="email"
+                    onChange={(e)=> handleChange(e)}
                     className=' w-full placeholder:font-thin placeholder:text-sm outline-none '
                     placeholder='Enter your email'
                 />
@@ -31,6 +58,8 @@ const Login = () => {
                 <i class="ri-lock-password-line text-[#435663]"></i>
                 <input
                     type="password"
+                    name='password'
+                    onChange={(e)=> handleChange(e)}
                     className=' w-full  placeholder:font-thin placeholder:text-sm outline-none '
                     placeholder='Enter your password'
                 />
@@ -38,11 +67,12 @@ const Login = () => {
                 <p className='text-[9px] mt-2 '>Forgot password? <span className='text-[#209D93] font-semibold'>Reset it.</span></p>
                 <button
                     type="submit"
+                    onClick={(e)=> handleSubmit(e)}
                     className='w-full bg-[#209D93] text-white py-1 rounded-md hover:bg-[#187f7b] transition duration-300 mt-5'
                 >
-                    Login
+                    {status === 'loading' ? 'Logging in...' : 'Login'}
                 </button>
-
+                    {error && <p style={{ color: 'red' }}>{error}</p>}
             </form>
 
                 <div>

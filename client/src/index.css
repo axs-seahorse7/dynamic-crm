@@ -72,3 +72,7 @@
 .selectList{
   @apply bg-white border border-[#60b6ad] rounded-md px-4 py-1 text-gray-700 focus:outline-none font-thin text-sm;
 }
+
+.registrationInput{
+  @apply w-full rounded-sm border border-[#60b6ad] bg-white px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-100;
+}

@@ -4,11 +4,19 @@ import path from 'path'
 import cookieParser from 'cookie-parser';
 import logger from 'morgan'
 import { fileURLToPath } from "url";
+import corse from 'cors'
+import conectDb from './db/config/db.configure.js'
+import notificationsRoutes from "./routes/notification.js";
+
+
+conectDb()
 
 import indexRouter from './routes/index.js'
 import usersRouter from './routes/users.js'
 
 var app = express();
+
+app.use(corse())
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,7 +32,8 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/api', usersRouter);
+app.use("/api/notifications", notificationsRoutes);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
