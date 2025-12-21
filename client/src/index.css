@@ -43,8 +43,12 @@
 
 
 .sidebarHeight {
-  height: calc(100vh - 40px);
-  scrollbar-width: none; /* Firefox */
+  height: 100vh;
+  /* scrollbar-width: none; Firefox */
+  
+}
+.sidebarHeight::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .elementStyleBox{
@@ -75,4 +79,20 @@
 
 .registrationInput{
   @apply w-full rounded-sm border border-[#60b6ad] bg-white px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-100;
+}
+
+.custom-menu .ant-menu-item {
+  color: #ffffff;
+}
+.custom-menu .ant-menu-item:hover {
+  color: #1890ff;
+  background-color: #cccccc;
+}
+.custom-menu .ant-menu-item-selected {
+  color: #fff !important;
+  background-color: #1890ff;
+}
+
+.field {
+  box-sizing: border-box;
 }

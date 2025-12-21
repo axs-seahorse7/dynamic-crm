@@ -1,8 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
-import { Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, Palette, RefreshCw, Type, Ruler } from 'lucide-react'
+import {Send, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, Palette, RefreshCw, Type, Ruler, Sparkles } from 'lucide-react'
+import { Modal, Button, Tabs, Select, Input, Space, Divider, Tag, message, Drawer, Typography, Radio, Switch, Card } from 'antd'
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import axios from 'axios'
+
+// Dummy menu data for dropdown configuration
+const DUMMY_MENUS = {
+  Sales: ['Sales_ID', 'Product', 'Amount', 'Date', 'SalesRep'],
+  Customer: ['CustomerID', 'Name', 'Email', 'Phone', 'Address', 'City', 'Country'],
+  Employee: ['EmployeeID', 'Name', 'Department', 'Email', 'Salary', 'JoinDate'],
+  Product: ['ProductID', 'ProductName', 'Category', 'Price', 'Stock', 'Supplier'],
+  Orders: ['OrderID', 'OrderDate', 'Customer', 'TotalAmount', 'Status', 'ShipDate']
+}
 
 const TestCanvas = () => {
+  const url = import.meta.env.VITE_API_URI;
   const [elements, setElements] = useState([])
   const [selectedIds, setSelectedIds] = useState([])
   const [tool, setTool] = useState('select')
@@ -37,6 +50,21 @@ const TestCanvas = () => {
   // refs to support constrained resizing (keep aspect ratio when Shift pressed)
   const resizeStartRef = useRef(null)
   const resizeMouseStartRef = useRef(null)
+
+  // Dropdown configuration modal state
+  const [showDropdownConfig, setShowDropdownConfig] = useState(false)
+  const [dropdownConfigMode, setDropdownConfigMode] = useState('menu') // 'menu' or 'manual'
+  const [dropdownConfigStep, setDropdownConfigStep] = useState(1) // step 1: mode, 2: menu selection, 3: field selection, 4: done
+  const [selectedMenu, setSelectedMenu] = useState(null)
+  const [selectedField, setSelectedField] = useState(null)
+  const [manualListValues, setManualListValues] = useState(['']) // for manual mode
+  const [pendingDropdownElement, setPendingDropdownElement] = useState(null) // element id waiting for config
+  const [dropdownValues, setDropdownValues] = useState({}) // Maps element id to selected value {elementId: selectedValue}
+  const [isAIDrawerOpen, setIsAIDrawerOpen] = useState(false)
+  const [formFields, setFormFields] = useState([
+    { id: 1, label: '', type: 'input-text', dropdownOptions: ['', ''], radioOptions: ['', ''], checkboxOptions: ['', ''] }
+  ])
+  const [nextFieldId, setNextFieldId] = useState(2)
 
   // computed currently-selected element (move before effects that reference it)
   const selectedElement = selectedIds.length === 1 ? elements.find(el => el.id === selectedIds[0]) : null
@@ -123,6 +151,15 @@ const TestCanvas = () => {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [selectedIds, selectedElement, elements, editingElement])
 
+  // Block any element type changes while dropdown config modal is open
+  useEffect(() => {
+    if (showDropdownConfig && pendingDropdownElement !== null) {
+      // Store the pending element so we don't accidentally change it
+      // This prevents any accidental re-triggering during modal interaction
+      return () => {}
+    }
+  }, [showDropdownConfig, pendingDropdownElement])
+
   // initialize properties panel default position and keep it inside viewport on resize
   useEffect(() => {
     const panelW = 256 // matches w-64
@@ -194,7 +231,7 @@ const TestCanvas = () => {
       color: '#000000',
       backgroundColor: '#ffffff',
       borderColor: '#000000',
-      borderWidth: 2,
+      borderWidth: 1,
       text: 'Element',
       placeholder: '',
       fontSize: 14,
@@ -232,6 +269,18 @@ const TestCanvas = () => {
   const handleElementMouseDown = (e, id) => {
     e.stopPropagation()
     
+    const element = elements.find(el => el.id === id)
+    
+    // For dropdown elements, check if clicking on the select itself (allow interaction) vs the border (allow selection)
+    if (element?.elementType === 'dropdown' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      // Check if click is directly on the select element (inside the dropdown box)
+      const isClickOnSelect = e.target.tagName === 'SELECT' || e.target.closest('select')
+      if (isClickOnSelect) {
+        // Allow dropdown interaction, don't drag
+        return
+      }
+    }
+    
     if (e.shiftKey) {
       if (selectedIds.includes(id)) {
         setSelectedIds(selectedIds.filter(selectedId => selectedId !== id))
@@ -246,7 +295,6 @@ const TestCanvas = () => {
     
     setIsDragging(true)
     const rect = canvasRef.current.getBoundingClientRect()
-    const element = elements.find(el => el.id === id)
     const mouseX = (e.clientX - rect.left - 50) / zoom
     const mouseY = (e.clientY - rect.top - 50) / zoom
     setDragStart({
@@ -426,6 +474,22 @@ const TestCanvas = () => {
   }
 
   const changeElementType = (newType) => {
+    if (newType === 'dropdown') {
+      // Prevent modal from re-triggering if already configuring or has config
+      if (showDropdownConfig || pendingDropdownElement !== null) return
+      const alreadyHasDropdown = selectedIds.length === 1 && elements.find(el => el.id === selectedIds[0])?.dropdownConfig
+      if (alreadyHasDropdown) return
+      // Open dropdown configuration modal
+      setPendingDropdownElement(selectedIds[0])
+      setShowDropdownConfig(true)
+      setDropdownConfigStep(1)
+      setDropdownConfigMode('menu')
+      setSelectedMenu(null)
+      setSelectedField(null)
+      setManualListValues([''])
+      return
+    }
+
     setElements(elements.map(el => {
       if (selectedIds.includes(el.id)) {
         const updates = { elementType: newType }
@@ -442,10 +506,6 @@ const TestCanvas = () => {
         } else if (newType === 'text') {
           updates.text = 'Text Label'
           updates.height = 30
-        } else if (newType === 'dropdown') {
-          updates.text = 'Select...'
-          updates.height = 40
-          updates.options = ['Option 1', 'Option 2', 'Option 3']
         } else if (newType === 'radio') {
           updates.text = 'Radio Button'
           updates.height = 30
@@ -460,6 +520,233 @@ const TestCanvas = () => {
       }
       return el
     }))
+  }
+
+  // Handle dropdown configuration
+  const handleDropdownConfigComplete = () => {
+    if (!pendingDropdownElement) return
+
+    let dropdownOptions = []
+    if (dropdownConfigMode === 'menu' && selectedField) {
+      // Simulate fetching data from the selected menu and field
+      dropdownOptions = generateDropdownOptions(selectedMenu, selectedField)
+    } else if (dropdownConfigMode === 'manual') {
+      dropdownOptions = manualListValues.filter(v => v.trim() !== '')
+    }
+
+    setElements(elements.map(el => {
+      if (el.id === pendingDropdownElement) {
+        return {
+          ...el,
+          elementType: 'dropdown',
+          text: 'Select...',
+          height: 40,
+          options: dropdownOptions,
+          dropdownConfig: {
+            mode: dropdownConfigMode,
+            menu: selectedMenu,
+            field: selectedField,
+            manualValues: dropdownConfigMode === 'manual' ? manualListValues.filter(v => v.trim() !== '') : []
+          }
+        }
+      }
+      return el
+    }))
+
+    setShowDropdownConfig(false)
+    setPendingDropdownElement(null)
+  }
+
+  const generateDropdownOptions = (menu, field) => {
+    // Simulate generating options from menu field
+    const mockData = {
+      'Customer-Name': ['John Doe', 'Jane Smith', 'Bob Johnson', 'Alice Brown'],
+      'Customer-Email': ['john@example.com', 'jane@example.com', 'bob@example.com'],
+      'Employee-Name': ['Alice Johnson', 'Bob Smith', 'Charlie Davis'],
+      'Sales-Product': ['Product A', 'Product B', 'Product C'],
+      'Product-Category': ['Electronics', 'Clothing', 'Food']
+    }
+    const key = `${menu}-${field}`
+    return mockData[key] || [field + ' 1', field + ' 2', field + ' 3']
+  }
+
+  const handleManualListChange = (index, value) => {
+    const newList = [...manualListValues]
+    newList[index] = value
+    setManualListValues(newList)
+  }
+
+  const handleAddManualInput = () => {
+    setManualListValues([...manualListValues, ''])
+  }
+
+  const handleRemoveManualInput = (index) => {
+    setManualListValues(manualListValues.filter((_, i) => i !== index))
+  }
+
+  // Form Builder Handlers
+  const handleAddFormField = () => {
+    setFormFields([...formFields, { 
+      id: nextFieldId, 
+      label: '', 
+      type: 'input-text', 
+      dropdownOptions: ['', ''],
+      radioOptions: ['', ''],
+      checkboxOptions: ['', '']
+    }])
+    setNextFieldId(nextFieldId + 1)
+  }
+
+  const handleRemoveFormField = (id) => {
+    setFormFields(formFields.filter(field => field.id !== id))
+  }
+
+  const handleFieldLabelChange = (id, value) => {
+    setFormFields(formFields.map(field => 
+      field.id === id ? { ...field, label: value } : field
+    ))
+  }
+
+  const handleFieldTypeChange = (id, value) => {
+    setFormFields(formFields.map(field => 
+      field.id === id ? { ...field, type: value } : field
+    ))
+  }
+
+  const handleDropdownOptionChange = (fieldId, optionIndex, value) => {
+    setFormFields(formFields.map(field => {
+      if (field.id === fieldId) {
+        const newOptions = [...field.dropdownOptions]
+        newOptions[optionIndex] = value
+        return { ...field, dropdownOptions: newOptions }
+      }
+      return field
+    }))
+  }
+
+  const handleAddDropdownOption = (fieldId) => {
+    setFormFields(formFields.map(field => {
+      if (field.id === fieldId) {
+        return { ...field, dropdownOptions: [...field.dropdownOptions, ''] }
+      }
+      return field
+    }))
+  }
+
+  const handleRemoveDropdownOption = (fieldId, optionIndex) => {
+    setFormFields(formFields.map(field => {
+      if (field.id === fieldId && field.dropdownOptions.length > 2) {
+        return { 
+          ...field, 
+          dropdownOptions: field.dropdownOptions.filter((_, i) => i !== optionIndex) 
+        }
+      }
+      return field
+    }))
+  }
+
+  const handleRadioOptionChange = (fieldId, optionIndex, value) => {
+    setFormFields(formFields.map(field => {
+      if (field.id === fieldId) {
+        const newOptions = [...field.radioOptions]
+        newOptions[optionIndex] = value
+        return { ...field, radioOptions: newOptions }
+      }
+      return field
+    }))
+  }
+
+  const handleAddRadioOption = (fieldId) => {
+    setFormFields(formFields.map(field => {
+      if (field.id === fieldId) {
+        return { ...field, radioOptions: [...field.radioOptions, ''] }
+      }
+      return field
+    }))
+  }
+
+  const handleRemoveRadioOption = (fieldId, optionIndex) => {
+    setFormFields(formFields.map(field => {
+      if (field.id === fieldId && field.radioOptions.length > 2) {
+        return { 
+          ...field, 
+          radioOptions: field.radioOptions.filter((_, i) => i !== optionIndex) 
+        }
+      }
+      return field
+    }))
+  }
+
+  const handleCheckboxOptionChange = (fieldId, optionIndex, value) => {
+    setFormFields(formFields.map(field => {
+      if (field.id === fieldId) {
+        const newOptions = [...field.checkboxOptions]
+        newOptions[optionIndex] = value
+        return { ...field, checkboxOptions: newOptions }
+      }
+      return field
+    }))
+  }
+
+  const handleAddCheckboxOption = (fieldId) => {
+    setFormFields(formFields.map(field => {
+      if (field.id === fieldId) {
+        return { ...field, checkboxOptions: [...field.checkboxOptions, ''] }
+      }
+      return field
+    }))
+  }
+
+  const handleRemoveCheckboxOption = (fieldId, optionIndex) => {
+    setFormFields(formFields.map(field => {
+      if (field.id === fieldId && field.checkboxOptions.length > 2) {
+        return { 
+          ...field, 
+          checkboxOptions: field.checkboxOptions.filter((_, i) => i !== optionIndex) 
+        }
+      }
+      return field
+    }))
+  }
+
+  const handleSubmitForm = () => {
+    // Validate form
+    const hasEmptyLabels = formFields.some(field => !field.label.trim())
+    if (hasEmptyLabels) {
+      message.error('Please fill in all field labels')
+      return
+    }
+
+    // Check dropdown options
+    const hasInvalidDropdowns = formFields.some(field => 
+      field.type === 'dropdown' && field.dropdownOptions.filter(opt => opt.trim()).length < 2
+    )
+    if (hasInvalidDropdowns) {
+      message.error('Dropdown fields must have at least 2 options')
+      return
+    }
+
+    // Check radio options
+    const hasInvalidRadios = formFields.some(field => 
+      field.type === 'radio' && field.radioOptions.filter(opt => opt.trim()).length < 2
+    )
+    if (hasInvalidRadios) {
+      message.error('Radio fields must have at least 2 options')
+      return
+    }
+
+    // Check checkbox options
+    const hasInvalidCheckboxes = formFields.some(field => 
+      field.type === 'checkbox' && field.checkboxOptions.filter(opt => opt.trim()).length < 2
+    )
+    if (hasInvalidCheckboxes) {
+      message.error('Checkbox fields must have at least 2 options')
+      return
+    }
+
+    message.success('Form configuration saved!')
+    console.log('Form Fields:', formFields)
+    // Here you can process the form data, create canvas elements, etc.
   }
 
   const toggleTextDecoration = (decoration) => {
@@ -612,60 +899,78 @@ const TestCanvas = () => {
       transform: `rotate(${element.rotation}deg)`,
     }
 
+    const justifyContent = element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : 'flex-start'
+
     let content = null
 
     switch (element.elementType) {
       case 'input':
         content = (
-          <input
-            type="text"
-            placeholder={element.placeholder}
-            style={{...contentStyle, textAlign: element.textAlign || 'left'}}
-            className="px-3 outline-none pointer-events-none"
-            value={element.text}
-            readOnly
-          />
+          <div style={{ ...contentStyle, display: 'flex', alignItems: 'center', padding: '0 8px' }} className='pointer-events-none'>
+            <Input
+              value={element.text}
+              placeholder={element.placeholder}
+              readOnly
+              bordered={false}
+              style={{ textAlign: element.textAlign || 'left', padding: 0, background: 'transparent' }}
+            />
+          </div>
         )
         break
       case 'button':
-        const buttonAlign = element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : 'flex-start'
         content = (
-          <button
-            style={contentStyle}
-            className={`px-4 flex items-center font-medium pointer-events-none justify-${element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'end' : 'start'}`}
-          >
-            {element.text}
-          </button>
+          <div style={{ ...contentStyle, padding: 0 }}>
+            <Button
+              block
+              style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent }}
+              className='pointer-events-none'
+            >
+              {element.text}
+            </Button>
+          </div>
         )
         break
       case 'text':
         content = (
           <div
-            style={contentStyle}
-            className={`px-2 flex items-center pointer-events-none justify-${element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'end' : 'start'}`}
+            style={{ ...contentStyle, display: 'flex', alignItems: 'center', justifyContent, padding: '0 8px' }}
+            className='pointer-events-none'
           >
-            {element.text}
+            <Typography.Text style={{ margin: 0, width: '100%' }}>
+              {element.text}
+            </Typography.Text>
           </div>
         )
         break
-      case 'dropdown':
+      case 'dropdown': {
+        const dropdownOptions = element.options && element.options.length > 0 ? element.options : ['Option 1', 'Option 2']
+        const currentValue = dropdownValues[element.id] || undefined
         content = (
           <div
-            style={contentStyle}
-            className={`px-3 flex items-center pointer-events-none ${element.textAlign === 'center' ? 'justify-center' : element.textAlign === 'right' ? 'justify-end' : 'justify-between'}`}
+            style={{ ...contentStyle, padding: '4px 8px' }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
-            <span>{element.text}</span>
-            {element.textAlign !== 'center' && element.textAlign !== 'right' && <span>▼</span>}
+            <Select
+              value={currentValue}
+              placeholder={element.text}
+              style={{ width: '100%' }}
+              options={dropdownOptions.map(opt => ({ label: opt, value: opt }))}
+              onChange={(value) => setDropdownValues({ ...dropdownValues, [element.id]: value })}
+              allowClear
+              dropdownStyle={{ zIndex: 2147483647 }}
+            />
           </div>
         )
         break
+      }
       case 'radio':
         content = (
           <div
-            style={{...contentStyle, display: 'flex', alignItems: 'center', padding: '0 8px', justifyContent: element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : 'flex-start'}}
-            className="pointer-events-none"
+            style={{ ...contentStyle, display: 'flex', alignItems: 'center', justifyContent, padding: '0 8px' }}
+            className='pointer-events-none'
           >
-            <div className="w-4 h-4 rounded-full border-2 border-current mr-2"></div>
+            <Radio checked style={{ marginRight: 8 }} />
             <span>{element.text}</span>
           </div>
         )
@@ -673,20 +978,31 @@ const TestCanvas = () => {
       case 'toggle':
         content = (
           <div
-            style={{...contentStyle, display: 'flex', alignItems: 'center', padding: '4px', justifyContent: element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : 'flex-start'}}
-            className="pointer-events-none"
+            style={{ ...contentStyle, display: 'flex', alignItems: 'center', justifyContent, padding: '0 8px' }}
+            className='pointer-events-none'
           >
-            <div className="w-10 h-6 bg-gray-300 rounded-full relative">
-              <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5"></div>
-            </div>
+            <Switch defaultChecked style={{ pointerEvents: 'none' }} />
           </div>
+        )
+        break
+      case 'box':
+        content = (
+          <Card
+            size='small'
+            bordered
+            style={{ ...contentStyle, height: '100%', display: 'flex', flexDirection: 'column', justifyContent, padding: 0 }}
+            bodyStyle={{ padding: 8, flex: 1, display: 'flex', alignItems: 'center', justifyContent }}
+            className='pointer-events-none'
+          >
+            {element.text}
+          </Card>
         )
         break
       default:
         content = (
           <div
-            style={contentStyle}
-            className={`flex items-center pointer-events-none justify-${element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'end' : 'start'}`}
+            style={{ ...contentStyle, display: 'flex', alignItems: 'center', justifyContent }}
+            className='pointer-events-none'
           >
             {element.text}
           </div>
@@ -772,8 +1088,337 @@ const TestCanvas = () => {
     )
   }
 
+  // Dropdown Configuration Modal Component
+  const DropdownConfigModal = () => {
+    const menuOptions = Object.keys(DUMMY_MENUS).map(m => ({ label: m, value: m }))
+    const fieldOptions = selectedMenu ? DUMMY_MENUS[selectedMenu].map(f => ({ label: f, value: f })) : []
+
+    return (
+      <Modal
+        title="Configure Dropdown"
+        open={showDropdownConfig}
+        onCancel={() => {
+          setShowDropdownConfig(false)
+          setPendingDropdownElement(null)
+          setDropdownConfigMode('menu')
+          setDropdownConfigStep(1)
+        }}
+        onOk={handleDropdownConfigComplete}
+        width={600}
+        okText="Complete"
+        cancelText="Cancel"
+      >
+        {dropdownConfigStep === 1 && (
+          <div className="space-y-4">
+            <div>Choose dropdown configuration mode:</div>
+            <div className="flex gap-4">
+              <Button
+                size="large"
+                type={dropdownConfigMode === 'menu' ? 'primary' : 'default'}
+                onClick={() => {
+                  setDropdownConfigMode('menu')
+                  setDropdownConfigStep(2)
+                }}
+              >
+                Choose Menu
+              </Button>
+              <Button
+                size="large"
+                type={dropdownConfigMode === 'manual' ? 'primary' : 'default'}
+                onClick={() => {
+                  setDropdownConfigMode('manual')
+                  setDropdownConfigStep(4)
+                }}
+              >
+                Create List Manually
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {dropdownConfigStep === 2 && dropdownConfigMode === 'menu' && (
+          <div className="space-y-4">
+            <div>Step 1: Select a Menu</div>
+            <Select
+              placeholder="Choose a menu..."
+              options={menuOptions}
+              value={selectedMenu}
+              onChange={(value) => setSelectedMenu(value)}
+              style={{ width: '100%' }}
+            />
+            <Button
+              type="primary"
+              disabled={!selectedMenu}
+              onClick={() => setDropdownConfigStep(3)}
+              block
+            >
+              Next: Select Field
+            </Button>
+          </div>
+        )}
+
+        {dropdownConfigStep === 3 && dropdownConfigMode === 'menu' && (
+          <div className="space-y-4">
+            <div>Step 2: Select a Field from {selectedMenu}</div>
+            <div className="mb-4">Available fields:</div>
+            <Select
+              placeholder="Choose a field..."
+              options={fieldOptions}
+              value={selectedField}
+              onChange={(value) => setSelectedField(value)}
+              style={{ width: '100%' }}
+            />
+            <div className="flex gap-2">
+              <Button onClick={() => setDropdownConfigStep(2)}>Back</Button>
+              <Button
+                type="primary"
+                disabled={!selectedField}
+                onClick={handleDropdownConfigComplete}
+                style={{ flex: 1 }}
+              >
+                Complete Configuration
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {dropdownConfigStep === 4 && dropdownConfigMode === 'manual' && (
+          <div className="space-y-4">
+            <div>Create dropdown list manually:</div>
+            <div className="space-y-2">
+              {manualListValues.map((value, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    placeholder={`Option ${index + 1}`}
+                    value={value}
+                    onChange={(e) => handleManualListChange(index, e.target.value)}
+                  />
+                  {manualListValues.length > 1 && (
+                    <Button
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => handleRemoveManualInput(index)}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            <Button
+              icon={<PlusOutlined />}
+              onClick={handleAddManualInput}
+              block
+            >
+              Add More Options
+            </Button>
+            <Button
+              type="primary"
+              disabled={manualListValues.filter(v => v.trim() !== '').length === 0}
+              onClick={handleDropdownConfigComplete}
+              block
+            >
+              Complete Configuration
+            </Button>
+          </div>
+        )}
+      </Modal>
+    )
+  }
+
   return (
     <div className='w-full h-screen flex flex-col bg-white'>
+      {/* Dropdown Config Modal */}
+      <DropdownConfigModal />
+
+      <Drawer
+        title='Form Builder'
+        placement='right'
+        width={450}
+        onClose={() => setIsAIDrawerOpen(false)}
+        open={isAIDrawerOpen}
+      >
+        <div className='flex flex-col h-full'>
+          {/* Form Fields */}
+          <div className='flex-1 overflow-y-auto mb-4' style={{ gap: '5px', display: 'flex', flexDirection: 'column' }}>
+            {formFields.map((field, index) => (
+              <Card key={field.id} size='small' className='border border-gray-300'>
+                <div className='space-y-3'>
+                  {/* Field Header */}
+                  <div className='flex items-center justify-between mb-2'>
+                    <span className='text-xs font-semibold text-gray-500'>Field {index + 1}</span>
+                    {formFields.length > 1 && (
+                      <Button
+                        danger
+                        size='small'
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleRemoveFormField(field.id)}
+                      />
+                    )}
+                  </div>
+
+                  {/* Label Input and Type Selector - Side by Side */}
+                  <div className='flex gap-2'>
+                    <div className='flex-1'>
+                      <Input
+                        placeholder='e.g., Name, Email, Age'
+                        value={field.label}
+                        onChange={(e) => handleFieldLabelChange(field.id, e.target.value)}
+                      />
+                    </div>
+                    <div style={{ width: '160px' }}>
+                      <Select
+                        style={{ width: '100%' }}
+                        value={field.type}
+                        onChange={(value) => handleFieldTypeChange(field.id, value)}
+                        options={[
+                          { label: 'Input - Text', value: 'input-text' },
+                          { label: 'Input - Email', value: 'input-email' },
+                          { label: 'Input - Number', value: 'input-number' },
+                          { label: 'Dropdown', value: 'dropdown' },
+                          { label: 'Radio', value: 'radio' },
+                          { label: 'Checkbox', value: 'checkbox' },
+                          { label: 'Text Area', value: 'textarea' }
+                        ]}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Dropdown Options (conditional) */}
+                  {field.type === 'dropdown' && (
+                    <div className='bg-gray-50 p-3 rounded border border-gray-200'>
+                      <div className='text-xs font-medium mb-2'>Dropdown Options</div>
+                      <div className='space-y-2'>
+                        {field.dropdownOptions.map((option, optIdx) => (
+                          <div key={optIdx} className='flex gap-2'>
+                            <Input
+                              size='small'
+                              placeholder={`Option ${optIdx + 1}`}
+                              value={option}
+                              onChange={(e) => handleDropdownOptionChange(field.id, optIdx, e.target.value)}
+                            />
+                            {field.dropdownOptions.length > 2 && (
+                              <Button
+                                size='small'
+                                danger
+                                icon={<DeleteOutlined />}
+                                onClick={() => handleRemoveDropdownOption(field.id, optIdx)}
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        size='small'
+                        icon={<PlusOutlined />}
+                        onClick={() => handleAddDropdownOption(field.id)}
+                        block
+                        className='mt-2'
+                      >
+                        Add Option
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Radio Options (conditional) */}
+                  {field.type === 'radio' && (
+                    <div className='bg-blue-50 p-3 rounded border border-blue-200'>
+                      <div className='text-xs font-medium mb-2'>Radio Options</div>
+                      <div className='space-y-2'>
+                        {field.radioOptions.map((option, optIdx) => (
+                          <div key={optIdx} className='flex gap-2'>
+                            <Input
+                              size='small'
+                              placeholder={`Option ${optIdx + 1}`}
+                              value={option}
+                              onChange={(e) => handleRadioOptionChange(field.id, optIdx, e.target.value)}
+                            />
+                            {field.radioOptions.length > 2 && (
+                              <Button
+                                size='small'
+                                danger
+                                icon={<DeleteOutlined />}
+                                onClick={() => handleRemoveRadioOption(field.id, optIdx)}
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        size='small'
+                        icon={<PlusOutlined />}
+                        onClick={() => handleAddRadioOption(field.id)}
+                        block
+                        className='mt-2'
+                      >
+                        Add Option
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Checkbox Options (conditional) */}
+                  {field.type === 'checkbox' && (
+                    <div className='bg-green-50 p-3 rounded border border-green-200'>
+                      <div className='text-xs font-medium mb-2'>Checkbox Options</div>
+                      <div className='space-y-2'>
+                        {field.checkboxOptions.map((option, optIdx) => (
+                          <div key={optIdx} className='flex gap-2'>
+                            <Input
+                              size='small'
+                              placeholder={`Option ${optIdx + 1}`}
+                              value={option}
+                              onChange={(e) => handleCheckboxOptionChange(field.id, optIdx, e.target.value)}
+                            />
+                            {field.checkboxOptions.length > 2 && (
+                              <Button
+                                size='small'
+                                danger
+                                icon={<DeleteOutlined />}
+                                onClick={() => handleRemoveCheckboxOption(field.id, optIdx)}
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        size='small'
+                        icon={<PlusOutlined />}
+                        onClick={() => handleAddCheckboxOption(field.id)}
+                        block
+                        className='mt-2'
+                      >
+                        Add Option
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            ))}
+
+            {/* Add Field Button */}
+            <Button
+              icon={<PlusOutlined />}
+              onClick={handleAddFormField}
+              block
+              type='dashed'
+            >
+              Add New Field
+            </Button>
+          </div>
+
+          {/* Submit Button */}
+          <div className='border-t pt-4'>
+            <Button
+              type='primary'
+              icon={<Send size={16} />}
+              onClick={handleSubmitForm}
+              block
+              size='large'
+            >
+              Generate Form
+            </Button>
+          </div>
+        </div>
+      </Drawer>
+
       {/* Navbar with centered toolbox and right actions */}
       <div className=' h-14 py-5 flex items-center border-b border-gray-200 relative'>
         <div className='absolute left-1/2 transform -translate-x-1/2'>
@@ -805,6 +1450,7 @@ const TestCanvas = () => {
             <button
               ref={elementTypeBtnRef}
               onClick={() => {
+                if (showDropdownConfig) return
                 const next = !showElementTypeDropdown
                 setShowElementTypeDropdown(next)
                 if (next && elementTypeBtnRef.current) {
@@ -824,7 +1470,7 @@ const TestCanvas = () => {
               </svg>
             </button>
 
-            {showElementTypeDropdown && elementTypePos && typeof document !== 'undefined' && ReactDOM.createPortal(
+            {showElementTypeDropdown && elementTypePos && typeof document !== 'undefined' && !showDropdownConfig && ReactDOM.createPortal(
               <div ref={elementTypeDropdownRef} style={{ position: 'fixed', left: elementTypePos.left, top: elementTypePos.top, width: 176, zIndex: 2147483647 }}>
                 <div className='bg-white border border-gray-300 rounded-lg shadow-lg'>
                   <button onClick={() => { changeElementType('box'); setShowElementTypeDropdown(false) }} className='w-full px-3 py-2 text-left hover:bg-gray-50'>📦 Box</button>
@@ -911,6 +1557,14 @@ const TestCanvas = () => {
 
         {/* Right Side Action Buttons */}
         <div className='absolute right-3 flex items-center gap-2'>
+          <button
+            onClick={() => setIsAIDrawerOpen(true)}
+            className='p-2 rounded-full hover:bg-gray-200'
+            title='Open AI Assistant'
+          >
+            <Sparkles size={18} />
+          </button>
+
           <button
             onClick={() => setZoom(Math.max(0.1, zoom - 0.1))}
             className='p-2 rounded-full hover:bg-gray-200'

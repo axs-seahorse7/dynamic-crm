@@ -11,6 +11,7 @@ import TestCanvas from './components/Canvas/TestCanvas.jsx'
 import CanvasProgress from './components/Canvas/CanvasProgress.jsx'
 import D from './Admin/Super-Admin/pages/Dashboard.jsx'
 import Notifications from './pages/Notification.jsx'
+import NewMenu from './components/Canvas/NewMenu.jsx'
 
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
           <Route path='/account/test' element={<ProtectedRoute><TestCanvas/></ProtectedRoute>}></Route>
           <Route path='/account/create/menu' element={<ProtectedRoute><CanvasProgress/></ProtectedRoute>}></Route>
           <Route path='/account/notifications' element={<ProtectedRoute><Notifications/></ProtectedRoute>}></Route>
+          <Route path='/account/create/form' element={<ProtectedRoute><NewMenu/></ProtectedRoute>}></Route>
           
         <Route path='/admin/dashboard' element={<D/>}></Route>
 

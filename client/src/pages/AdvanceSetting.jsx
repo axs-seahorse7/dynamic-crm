@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar";
 import SettingsMenu from "../components/SettingsMenu";
 import Permissions from "../components/settings/Permissions";
 import CreateNewMenu from "../components/settings/CreateNewMenu";
+import ProfilePanel from "../components/AdvanceSttingMenus/ProfilePanel";
 
 export default function AdvanceSetting() {
     const [Page, setPage] = useState('Account')
@@ -17,16 +18,19 @@ export default function AdvanceSetting() {
 
   return (
     <>
-        <Navbar />
+    <div className="flex h-screen">
+       {/* <Navbar /> */}
         <SettingsMenu setCurrentPage={handleRecievePage} />
         {Page === 'Account' ?(
-            <div className="px-52 py-40">Account -</div>
+            <div className="">
+                <ProfilePanel/>
+            </div>
         ): Page === 'Permission' ?(
             <Permissions/>
         ): Page === 'Role & Access' ?(
             <div>Role & Access -</div>
         ): Page === 'Add new Menu' ?(
-            <div className="h-screen w-full justify-center items-center border ">
+            <div className=" w-full bg-white justify-center items-center border ">
                 <CreateNewMenu />
             </div>
         ): Page === 'User setting' ?(
@@ -58,6 +62,7 @@ export default function AdvanceSetting() {
         )
 
         }
+    </div>
     
     </>
 

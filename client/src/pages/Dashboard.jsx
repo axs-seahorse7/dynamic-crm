@@ -1,57 +1,93 @@
-import React from "react";
+import { React, useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
-import { House } from "lucide-react";
+import { ConfigProvider, Layout, Menu } from "antd";
+import {
+  Calendar,
+  House,
+  LibraryBig,
+  FileChartLine,
+  Users,
+  BriefcaseBusiness,
+  Settings,
+  MessageSquare,
+  LayoutGrid,
+  Clock,
+  CheckSquare,
+  Phone,
+  Mail,
+  FileText,
+  LogOut,
+  Grid3X3,
+  ChevronDown,
+  ChevronsLeft,
+  LayoutList,
+  UserRoundPlus,
+  CreditCard,
+  Package,
+  Target,
+  FilePlusCorner,
+} from "lucide-react";
+import { useSelector, useDispatch } from "react-redux";
+import CustomerDashboard from "../components/Menu/Customer";
+import { useNavigate } from "react-router-dom";
+
+const { Content, Header, Sider } = Layout;
 
 const Dashboard = () => {
+  const menuItems = useSelector((state) => state.sidebar.menus);
+  const appItems = useSelector((state) => state.sidebar.apps);
+  const navigate = useNavigate();
+  const [appIndex, setappIndex] = useState(0);
+  const [menuIndex, setmenuIndex] = useState(1);
+  const [mainMenuOpen, setMainMenuOpen] = useState(false);
+  const [currentIndex, setcurrentIndex] = useState("Dashboard")
+
+  const dispatch = useDispatch();
+
+  const [collapsed, setCollapsed] = useState(false);
+  const handleCollapse = () => setCollapsed(!collapsed);
+
+  const Icons = {
+    Grid3X3: <Grid3X3 size={18} />,
+    LibraryBig: <LibraryBig size={18} />,
+    Calendar: <Calendar size={18} />,
+    MessageSquare: <MessageSquare size={18} />,
+    Clock: <Clock size={18} />,
+    CheckSquare: <CheckSquare size={18} />,
+    Phone: <Phone size={18} />,
+    Mail: <Mail size={18} />,
+    FileText: <FileText size={18} />,
+    Settings: <Settings size={18} />,
+    UserPlus: <UserRoundPlus size={18} />,
+    Business: <BriefcaseBusiness size={18} />,
+    Users: <Users size={18} />,
+    FileChartLine: <FileChartLine size={18} />,
+    House: <House size={18} />,
+    CreditCard: <CreditCard size={18} />,
+    Package: <Package size={18} />,
+    Target: <Target size={18} />,
+    FilePlusCorner:<FilePlusCorner size={18} />
+  };
+
+
   return (
-    <div className="h-screen flex bg-gray-100 overflow-hidden">
-      <div>
-        <Sidebar />
-      </div>
-      <div className=" flex-1 relative w-full">
-        <Navbar />
-        <div className=" w-full h-15 flex items-center justify-between px-6 mt-4 ">
-          <div className="flex flex-col">
-            <span className="text-2xl font-bold"> Admin pannel</span>
-            <div className="text-gray-500 text-sm flex items-center ">
-              <House size={16} />/ Dashboard
-            </div>
+    <Layout style={{ minHeight: "100vh", }}>
+      <Sidebar />
+
+      <Layout>
+        <Header style={{ background: "#fff", padding: 0 }}>
+          <Navbar />
+        </Header>
+
+        <Content>
+          <div className="bg-gray-200 h-full w-4/4 py-5 px-5  shadow">
+           <div className="font-semibold text-slate-600 text-lg ">{currentIndex}</div>
+            
           </div>
-          <div className="flex gap-4">
-            <button className="button">Export</button>
-            <input
-              type="date"
-              className="button"
-              value={new Date().toISOString().split("T")[0]}
-            />
-          </div>
-        </div>
-
-        <div className=" w-full px-4">
-          <div className="bg-white px-6 w-full h-20 shadow rounded-md flex items-center justify-between mt-4">
-           
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 border rounded-full"></div>
-              <div>
-                <span className="text-lg font-bold text-slate-700 ">Welcome, John Advin</span>
-                <div className="text-sm text-gray-500">Administrator</div>
-              </div>
-            </div>
-
-            <button className="selectedButton">
-              View Profile
-            </button>
-          </div>
-
-          <div>
-            {/* Other dashboard content can go here */}
-
-          </div>
-
-        </div>
-      </div>
-    </div>
+        </Content>
+      </Layout>
+    </Layout>
   );
 };
 

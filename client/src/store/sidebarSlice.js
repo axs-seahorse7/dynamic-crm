@@ -1,64 +1,115 @@
-import {createSlice} from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
 
+/* ------------------ STATIC MENUS ------------------ */
+const staticMenus = [
+  { id: "dashboard", label: "Dashboard", icon: "Grid3X3", active: true },
+  { id: "leads", label: "Leads", icon: "Target", active: false },
+  { id: "customers", label: "Customers", icon: "Users", active: false },
+  { id: "reports", label: "Reports", icon: "FileChartLine", active: false },
+  { id: "settings", label: "Settings", icon: "Settings", active: false }
+];
+
+const url = import.meta.env.VITE_API_URI; 
+
+/* ------------------ FETCH DYNAMIC MENUS ------------------ */
+export const fetchSidebarMenus = createAsyncThunk(
+  "sidebar/fetchMenus",
+  async (_, { rejectWithValue }) => { 
+    try {
+      const res = await axios.get(url+"/sidebar/menus");
+      // console.log(res.data);
+      return res.data; // array of menus
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data || "Failed to load sidebar menus"
+      );
+    }
+  }
+);
+
+/* ------------------ SLICE ------------------ */
 const sidebarSlice = createSlice({
-    name: 'sidebar',
-    initialState: {
-        apps:[
-            { icon: "Grid3X3" , label: "Dashboard", active: true },
-            { icon: "Calendar", label: "Events", active: false },
-            { icon: "MessageSquare" , label: "Meetings", active: false },
-            { icon: "Clock", label: "Schedule", active: false },
-            { icon: "CheckSquare" , label: "Task", active: false },
-            { icon: "Phone" , label: "Contacts", active: false },
-            { icon: "Mail", label: "Emails", active: false },
-            { icon: "FileText" , label: "Accounting", active: false },
-            { icon: "FileText", label: "Billings", active: false },
-            { icon: "Settings", label: "Settings", active: false },
-        ],
+  name: "sidebar",
+  initialState: {
+    loading: false,
+    error: null,
 
-        menus:[
-          // { label: "Leads", icon: "UserPlus", active: true },
-          { label: "Opportunities", icon: "Business", active: false },
-          { label: "Customers", icon: "Users", active: false },
-          { label: "Employee", icon: "UserPlus", active: false },
-          { label: "Reports", icon: "FileChartLine", active: false },
-        ]
-    },
+    menus: staticMenus.map(m => ({
+      ...m,
+      source: "static"
+    })),
 
-    
-    reducers: {
-    addMenu: (state, action) => {
-      state.menus.push({
-        label: action.payload,
-        icon: "File",
-        active: false,
-      });
-    },
+    apps: [
+      { icon: "Calendar", label: "Events", active: false },
+      { icon: "MessageSquare", label: "Meetings", active: false },
+      { icon: "Clock", label: "Schedule", active: false },
+      { icon: "CheckSquare", label: "Task", active: false },
+      { icon: "Phone", label: "Contacts", active: false },
+      { icon: "Mail", label: "Emails", active: false }
+    ]
+  },
 
+  reducers: {
     setActiveMenu: (state, action) => {
-      state.menus.map((m, i) => {
-        m.active = i === action.payload;
+      state.menus.forEach((menu, i) => {
+        menu.active = i === action.payload;
       });
-      state.apps.map((m) => {
-        m.active = false;
+
+      state.apps.forEach(app => {
+        app.active = false;
       });
     },
 
     setActiveApps: (state, action) => {
-      state.apps.map((m, i) => {
-        m.active = i === action.payload;
+      state.apps.forEach((app, i) => {
+        app.active = i === action.payload;
       });
 
-      // Deactivate menus when an app is activated
-      state.menus.map((m) => {
-        m.active = false;
+      state.menus.forEach(menu => {
+        menu.active = false;
       });
-    },
-
+    }
   },
 
+  extraReducers: builder => {
+    builder
+      .addCase(fetchSidebarMenus.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+
+      .addCase(fetchSidebarMenus.fulfilled, (state, action) => {
+        state.loading = false;
+
+         const menusArray = Array.isArray(action.payload)
+          ? action.payload
+          : action.payload?.forms || [];
+
+
+        const dynamicMenus = menusArray.map(m => ({
+          ...m,
+          active: false,
+          source: "dynamic"
+        }));
+
+        const merged = [...state.menus, ...dynamicMenus].reduce(
+          (acc, menu) => {
+            acc[menu.id] = acc[menu.id] || menu;
+            return acc;
+          },
+          {}
+        );
+
+        state.menus = Object.values(merged);
+      })
+
+      .addCase(fetchSidebarMenus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  }
 });
 
-
-export const { addMenu, setActiveMenu, setActiveApps } = sidebarSlice.actions;
+export const { setActiveMenu, setActiveApps } = sidebarSlice.actions;
 export default sidebarSlice.reducer;

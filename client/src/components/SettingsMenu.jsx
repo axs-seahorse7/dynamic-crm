@@ -35,7 +35,7 @@ const SettingsMenu = ({setCurrentPage}) => {
     
 
   return (
-    <div className='w-40 sidebarHeight bg-[#001233] text-white absolute top-10 left-0 sidebarHeight overflow-y-scroll pt-14 px-2 space-y-1'>
+    <div className='w-40 sidebarHeight bg-[#001233] text-white overflow-y-scroll pt-10 px-2 space-y-1'>
         {settingMenu.map((item, index) => (
             <div 
             onClick={()=>handleActiveMenu(index)}
