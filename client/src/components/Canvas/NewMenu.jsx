@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Sidebar from "../Sidebar.jsx";
-import { Layout , Input} from "antd";
+import { Layout , Alert, message, Button, Modal, Input  } from "antd";
 import { 
   PlusCircle, 
   Trash2, 
@@ -19,9 +19,10 @@ import {
   Columns,
   Rows,
   PencilLine,
+  MenuIcon,
 } from 'lucide-react';
 import axios from 'axios';
-
+import RemixIcon from '../../assets/Icons/RemixIcon.jsx';
 const { Content } = Layout;
 
 // Field type options
@@ -39,8 +40,12 @@ const FIELD_TYPES = [
 ];
 
 const NewMenu = () => {
-  const [Name, setName] = useState("menu_name")
-  const [sections, setSections] = useState([
+  const [Name, setName] = useState("Untitled Form")
+  const [open, setOpen] = useState(false);
+  const [icon, setIcon] = useState(null);
+
+
+  const intialForm = 
     {
       id: 1,
       title: 'Basic Information',
@@ -58,13 +63,21 @@ const NewMenu = () => {
         }
       ]
     }
-  ]);
+  
+    const savedForm = JSON.parse(localStorage.getItem("formTemplate"));
+    const [sections, setSections] = useState(savedForm? savedForm : [intialForm]);
 
+  useEffect(() => {
+    localStorage.setItem("formTemplate", JSON.stringify(sections))
+  }, [sections])
+  
+console.log('sections', sections);
   const [resizing, setResizing] = useState(null); // { type: 'section'|'field', sectionId, fieldId }
   const [resizeStartData, setResizeStartData] = useState(null);
   const containerRef = useRef(null);
   const sectionRefs = useRef({});
   const url = import.meta.env.VITE_API_URI;
+
 
   // Add new section (always add to bottom)
   const addSection = () => {
@@ -128,12 +141,6 @@ const NewMenu = () => {
     setResizing({ type: 'section', sectionId });
   };
 
-  const getSectionWidthPx = (section) => {
-  if (!containerRef.current) return Infinity;
-
-  const containerWidth = containerRef.current.offsetWidth;
-  return (section.width / 100) * containerWidth;
-};
 
 const getSectionInnerWidthPx = (sectionId) => {
   const sectionEl = sectionRefs.current[sectionId];
@@ -430,10 +437,9 @@ const getSectionInnerWidthPx = (sectionId) => {
 
   const handleSubmitForm = async () => {
   try {
-    const response = await axios.post(
-      `${url}/form/create`,
-      {
+    const response = await axios.post(`${url}/form/create`,{
         name: Name, 
+        icon: icon,
         sections: sections 
       },
       {
@@ -443,12 +449,11 @@ const getSectionInnerWidthPx = (sectionId) => {
       }
     );
 
-    console.log('Form saved successfully:', response.data);
+      message.success(response.data.message)
+      setSections([intialForm]);
+      localStorage.removeItem("formTemplate");
   } catch (error) {
-    console.error(
-      'Error saving form:',
-      error.response?.data || error.message
-    );
+      message.success(error.response.data.message)
   }
 };
 
@@ -456,31 +461,59 @@ const getSectionInnerWidthPx = (sectionId) => {
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Sidebar />
+      <Modal
+        title="Icon Name"
+        open={open}
+        onCancel={() => {setOpen(false)}}
+        onOk={()=> setOpen(false)}
+        okText="Save"
+        width={600}
+      >
+        <div className='flex items-center gap-2 mb-3'>
+          <RemixIcon name={icon? icon : "information-2-line"} size={28}/> 
+         <input 
+          type="text"
+          onChange={(e)=>setName(e.target.value)}
+          value={Name} 
+          className='  text-2xl text-slate-500 border-gray-200 px-1 outline-none' 
+          />
+        </div>
+
+        <Input 
+        placeholder="Enter Icon Name" 
+        value={icon}
+        onChange={(e)=>setIcon(e.target.value)}
+        />
+        <div>
+        <p className="mt-4 text-sm text-gray-500">You can find icon names at <a title='https://remixicon.com/' href={`https://remixicon.com/`} target="_blank" className="text-blue-500 underline">Remix Icon Library</a></p>
+        </div>
+       
+      </Modal>
       
       <Layout>
         <Content style={{ height: '100vh', overflowY: 'auto' }}>
           <div className="bg-gray-100 min-h-screen py-8 px-4">
             <div className="max-w-6xl mx-auto">
               {/* Header */}
-              <div className="bg-white flex justify-between items-center rounded-lg shadow-md p-6 mb-6">
+              <div className="bg-white flex flex-col rounded-lg shadow-md p-6 mb-6">
                
-                  <div className="">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">Form Builder</h1>
-                <p className="text-gray-600">Create your custom form with sections and fields</p>
-                  </div>
-
                   <div className="flex gap-2 items-center">
+                    <button type='text' title='Change icon' onClick={() => setOpen(true)} className='cursor-pointer'><RemixIcon name={icon? icon : "information-2-line"} size={24}/></button>
                     <input 
-                    type="text" 
+                    type="text"
                     onChange={(e)=>setName(e.target.value)}
                     value={Name} 
-                    className='focus:border-b  text-lg text-slate-500 border-gray-200 px-1 outline-none' />
+                    className='focus:border-b  text-2xl text-slate-500 border-gray-200 px-1 outline-none' 
+                    />
                   </div>
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">Form Builder</h1>
+                    <p className="text-gray-600">Create your custom form with sections and fields</p>
+
               </div>
 
               {/* Sections Container */}
               <div ref={containerRef} className="space-y-6 mb-6">
-                {sections.map((section) => (
+                {Array.isArray(sections) && sections.length > 0 && sections.map((section) => (
                   <div
                     key={section.id}
                     style={{ width: `${section.width}%` }}
@@ -507,7 +540,7 @@ const getSectionInnerWidthPx = (sectionId) => {
                             className="bg-transparent border-b border-white/30 focus:border-white outline-none flex-1 font-semibold text-lg"
                           />
                         </div>
-                        {sections.length > 1 && (
+                        {sections.length > 2 && (
                           <button
                             onClick={() => deleteSection(section.id)}
                             className="text-white hover:text-red-200 transition-colors"
@@ -527,7 +560,7 @@ const getSectionInnerWidthPx = (sectionId) => {
 
                     {/* Fields */}
                     <div className="p-4 grid gap-4" style={{ gridTemplateColumns: 'repeat(12, 1fr)' }}>
-                      {section.fields.map((field, fieldIndex) => {
+                      { Array.isArray(section.fields) && section.fields.length > 0 && section.fields.map((field, fieldIndex) => {
                         // Calculate grid column span or use pixel width
                         let fieldStyle = {};
                         
@@ -709,6 +742,17 @@ const getSectionInnerWidthPx = (sectionId) => {
               </div>
             </div>
           </div>
+         {message.length>0 && 
+         <Alert 
+         title={message} 
+         type='success' 
+         style={{
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          zIndex: 9999,
+          width: 320,
+        }}/>}
         </Content>
       </Layout>
     </Layout>

@@ -59,7 +59,6 @@ export const validateFormPayload = (req, res, next) => {
           });
         }
       } else {
-        // 🔐 Force clean data
         field.fieldWidthPx = null;
       }
 

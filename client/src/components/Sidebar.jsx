@@ -5,34 +5,35 @@ import {logout} from '../store/authSlice.js'
 import { useNavigate } from "react-router-dom";
 import { ConfigProvider, Layout, Menu } from "antd";
 const { Content, Header, Sider } = Layout;
+import getLucideIcon from '../LucideIcons/LucideIcons.jsx';
+import RemixIcon from "../assets/Icons/RemixIcon.jsx";
 
-import {
-  Calendar,
-  House,
-  LibraryBig,
-  FileChartLine,
-  Users,
-  BriefcaseBusiness,
-  Settings,
-  MessageSquare,
-  LayoutGrid,
-  Clock,
-  CheckSquare,
-  Phone,
-  Mail,
-  FileText,
-  LogOut,
-  Grid3X3,
-  ChevronDown,
-  ChevronsLeft,
-  LayoutList,
-  UserRoundPlus,
-  CreditCard,
-  Package,
-  Target,
-  FilePlusCorner,
-} from "lucide-react";
-
+// import {
+//   Calendar,
+//   House,
+//   LibraryBig,
+//   FileChartLine,
+//   Users,
+//   BriefcaseBusiness,
+//   Settings,
+//   MessageSquare,
+//   LayoutGrid,
+//   Clock,
+//   CheckSquare,
+//   Phone,
+//   Mail,
+//   FileText,
+//   LogOut,
+//   Grid3X3,
+//   ChevronDown,
+//   ChevronsLeft,
+//   LayoutList,
+//   UserRoundPlus,
+//   CreditCard,
+//   Package,
+//   Target,
+//   FilePlusCorner,
+// } from "lucide-react";
 
 
 export default function Sidebar() {
@@ -48,27 +49,27 @@ export default function Sidebar() {
      const [collapsed, setCollapsed] = useState(false);
      const handleCollapse = () => setCollapsed(!collapsed);
 
-     const Icons = {
-        Grid3X3: <Grid3X3 size={18} />,
-        LibraryBig: <LibraryBig size={18} />,
-        Calendar: <Calendar size={18} />,
-        MessageSquare: <MessageSquare size={18} />,
-        Clock: <Clock size={18} />,
-        CheckSquare: <CheckSquare size={18} />,
-        Phone: <Phone size={18} />,
-        Mail: <Mail size={18} />,
-        FileText: <FileText size={18} />,
-        Settings: <Settings size={18} />,
-        UserPlus: <UserRoundPlus size={18} />,
-        Business: <BriefcaseBusiness size={18} />,
-        Users: <Users size={18} />,
-        FileChartLine: <FileChartLine size={18} />,
-        House: <House size={18} />,
-        CreditCard: <CreditCard size={18} />,
-        Package: <Package size={18} />,
-        Target: <Target size={18} />,
-        FilePlusCorner:<FilePlusCorner size={18} />
-      };
+    //  const Icons = {
+    //     Grid3X3: <Grid3X3 size={18} />,
+    //     LibraryBig: <LibraryBig size={18} />,
+    //     Calendar: <Calendar size={18} />,
+    //     MessageSquare: <MessageSquare size={18} />,
+    //     Clock: <Clock size={18} />,
+    //     CheckSquare: <CheckSquare size={18} />,
+    //     Phone: <Phone size={18} />,
+    //     Mail: <Mail size={18} />,
+    //     FileText: <FileText size={18} />,
+    //     Settings: <Settings size={18} />,
+    //     UserPlus: <UserRoundPlus size={18} />,
+    //     Business: <BriefcaseBusiness size={18} />,
+    //     Users: <Users size={18} />,
+    //     FileChartLine: <FileChartLine size={18} />,
+    //     House: <House size={18} />,
+    //     CreditCard: <CreditCard size={18} />,
+    //     Package: <Package size={18} />,
+    //     Target: <Target size={18} />,
+    //     FilePlusCorner:<FilePlusCorner size={18} />
+    //   };
 
     useEffect(() => {
         if (currentIndex == "New Menu") {
@@ -80,7 +81,7 @@ export default function Sidebar() {
       dispatch(fetchSidebarMenus());
       }, [dispatch]);
       
-      console.log("Sidebar menus:", menuItems, loading, error);
+      // console.log("Sidebar menus:", menuItems, loading, error);
 
   return (
        <Sider
@@ -121,24 +122,24 @@ export default function Sidebar() {
                setMainMenuOpen(keys.includes("main"));
              }}
              style={{ background: "#001529", paddingTop: "64px" }}
-             items={[
-               {
-                 key: "main",
-                 icon: Icons.House,
-                 label: "Menu",
-                 children: menuItems.map((item, index) => ({
-                   key: (index + 1).toString(),
-                   icon: Icons[item.icon],
-                   label: item.label? item.label : item.name?? 'No Name',
-                   onClick: () => {
-                     setmenuIndex(index + 1);
-                     setappIndex(-1);
-                     console.log("Clicked on menu:", item.label, index + 1);
-                     setcurrentIndex(item.label? item.label : item.name?? 'No Name');
-                   },
-                 })),
-               },
-             ]}
+            items={[
+              {
+                key: "main",
+                icon: getLucideIcon("House", { size: 18 }),
+                label: "Menu",
+                children: menuItems.map((item, index) => ({
+                  key: (index + 1).toString(),
+                  icon: item.source === "dynamic" ? (<RemixIcon name={item.icon} size={18} />) : getLucideIcon(item.icon, { size: 18 }) ,
+                  label: item.label ?? item.name ?? "No Name",
+                  onClick: () => {
+                    setmenuIndex(index + 1);
+                    setappIndex(-1);
+                    setcurrentIndex(item.label ?? item.name ?? "No Name");
+                  },
+                })),
+              },
+            ]}
+
            />
          </ConfigProvider>
  
@@ -178,13 +179,13 @@ export default function Sidebar() {
                        fontWeight: "500",
                      }}
                    >
-                     {Icons.LibraryBig}{" "}
+                    { getLucideIcon("LibraryBig", { size: 18 })}
                      <span style={{ marginLeft: 8 }}>Apps</span>
                    </div>
                  ),
                  children: appItems.map((item, index) => ({
                    key: (index + 1).toString(),
-                   icon: Icons[item.icon],
+                   icon: getLucideIcon(item.icon, { size: 18 }),
                    label: item.label,
                    onClick: () => {
                      setmenuIndex(index + 1);

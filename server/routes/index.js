@@ -10,11 +10,13 @@ router.get('/ai/prompt', function(req, res, next) {
 
 router.post("/form/create", validateFormPayload, async (req, res) => {
     try {
+      const path = req.body.name.toLowerCase().replace(/\s+/g, '-');
       const form = new Form(req.body);
+      form.path = path;
       await form.save();
 
       res.status(201).json({
-        message: "Form created successfully",
+        message: "Form created",
         data: form
       });
     } catch (err) {

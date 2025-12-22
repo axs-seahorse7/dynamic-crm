@@ -3,6 +3,8 @@ import SectionSchema from './section.schema.js';
 
 const FormSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  path: { type: String, required: true, unique: true },
+  icon: { type: String, default: 'information-2-line' },
   layoutType: {
     type: String,
     enum: ['PSL'],

@@ -18,7 +18,7 @@ export const fetchSidebarMenus = createAsyncThunk(
   async (_, { rejectWithValue }) => { 
     try {
       const res = await axios.get(url+"/sidebar/menus");
-      // console.log(res.data);
+      console.log(res.data);
       return res.data; // array of menus
     } catch (err) {
       return rejectWithValue(
@@ -87,8 +87,11 @@ const sidebarSlice = createSlice({
           : action.payload?.forms || [];
 
 
-        const dynamicMenus = menusArray.map(m => ({
-          ...m,
+        const dynamicMenus = menusArray.map((form) => ({
+          id: form._id,              // ✅ REQUIRED
+          label: form.name || "Untitled Form",
+          icon: form.icon ?? "FileText",
+          path: form.path || "/*",
           active: false,
           source: "dynamic"
         }));
