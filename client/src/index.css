@@ -96,3 +96,40 @@
 .field {
   box-sizing: border-box;
 }
+
+.form-wrapper {
+  max-width: 900px;
+  margin: auto;
+}
+
+.form-title {
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+.form-section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+}
+
+.required {
+  color: red;
+  margin-left: 4px;
+}

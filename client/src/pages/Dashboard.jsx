@@ -72,22 +72,9 @@ const Dashboard = () => {
 
 
   return (
-    <Layout style={{ minHeight: "100vh", }}>
-      <Sidebar />
-
-      <Layout>
-        <Header style={{ background: "#fff", padding: 0 }}>
-          <Navbar />
-        </Header>
-
-        <Content>
-          <div className="bg-gray-200 h-full w-4/4 py-5 px-5  shadow">
-           <div className="font-semibold text-slate-600 text-lg ">{currentIndex}</div>
-            
-          </div>
-        </Content>
-      </Layout>
-    </Layout>
+    <div>
+      Dashboard
+    </div>
   );
 };
 

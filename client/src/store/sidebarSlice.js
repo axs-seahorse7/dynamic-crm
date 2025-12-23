@@ -3,11 +3,10 @@ import axios from "axios";
 
 /* ------------------ STATIC MENUS ------------------ */
 const staticMenus = [
-  { id: "dashboard", label: "Dashboard", icon: "Grid3X3", active: true },
-  { id: "leads", label: "Leads", icon: "Target", active: false },
-  { id: "customers", label: "Customers", icon: "Users", active: false },
-  { id: "reports", label: "Reports", icon: "FileChartLine", active: false },
-  { id: "settings", label: "Settings", icon: "Settings", active: false }
+  { id: "dashboard", label: "Dashboard",  icon: "Grid3X3", path: "/dashboard",  active: true },
+  { id: "leads", label: "Leads", icon: "Target", path: "/dashboard/leads", active: false },
+  { id: "customers", label: "Customers", path: "/dashboard/customers", icon: "Users", active: false },
+  { id: "reports", label: "Reports", path: "/dashboard/reports", icon: "FileChartLine", active: false },
 ];
 
 const url = import.meta.env.VITE_API_URI; 
@@ -41,12 +40,15 @@ const sidebarSlice = createSlice({
     })),
 
     apps: [
-      { icon: "Calendar", label: "Events", active: false },
-      { icon: "MessageSquare", label: "Meetings", active: false },
-      { icon: "Clock", label: "Schedule", active: false },
-      { icon: "CheckSquare", label: "Task", active: false },
-      { icon: "Phone", label: "Contacts", active: false },
-      { icon: "Mail", label: "Emails", active: false }
+      { icon: "Calendar", label: "Events", path: "/dashboard/events", active: false },
+      { icon: "MessageSquare", label: "Meetings", path: "/dashboard/meetings", active: false },
+      { icon: "Clock", label: "Schedule", path: "/dashboard/schedule", active: false },
+      { icon: "CheckSquare", label: "Task", path: "/dashboard/tasks", active: false },
+      { icon: "Phone", label: "Contacts", path: "/dashboard/contacts", active: false },
+      { icon: "Mail", label: "Emails", path: "/dashboard/emails", active: false },
+      { icon: "Mail", label: "New Menu", path: "/dashboard/create/form", active: false },
+      { icon: "Settings", label: "Settings", path: "/dashboard/settings",  active: false }
+
     ]
   },
 

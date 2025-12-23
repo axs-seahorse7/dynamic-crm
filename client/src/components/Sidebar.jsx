@@ -2,7 +2,7 @@ import {useState, useEffect} from "react"
 import { useSelector, useDispatch } from "react-redux";
 import { setActiveMenu, setActiveApps, fetchSidebarMenus } from "../store/sidebarSlice";
 import {logout} from '../store/authSlice.js'
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation  } from "react-router-dom";
 import { ConfigProvider, Layout, Menu } from "antd";
 const { Content, Header, Sider } = Layout;
 import getLucideIcon from '../LucideIcons/LucideIcons.jsx';
@@ -41,6 +41,7 @@ export default function Sidebar() {
      const {loading, error} = useSelector((state) => state.sidebar);
      const appItems = useSelector((state) => state.sidebar.apps);
      const navigate = useNavigate();
+     const location = useLocation();
      const dispatch = useDispatch();
      const [appIndex, setappIndex] = useState(0);
      const [menuIndex, setmenuIndex] = useState(1);
@@ -116,22 +117,23 @@ export default function Sidebar() {
          >
            <Menu
              mode="inline"
-             selectedKeys={menuIndex !== -1 ? [menuIndex.toString()] : []}
+             selectedKeys={[location.pathname]}
              openKeys={mainMenuOpen ? ["main"] : []}
              onOpenChange={(keys) => {
                setMainMenuOpen(keys.includes("main"));
              }}
-             style={{ background: "#001529", paddingTop: "64px" }}
+             style={{ background: "#001529", paddingTop: "64px", }}
             items={[
               {
                 key: "main",
                 icon: getLucideIcon("House", { size: 18 }),
                 label: "Menu",
                 children: menuItems.map((item, index) => ({
-                  key: (index + 1).toString(),
-                  icon: item.source === "dynamic" ? (<RemixIcon name={item.icon} size={18} />) : getLucideIcon(item.icon, { size: 18 }) ,
+                  key: item.path,
+                  icon: item.source === "dynamic" ? (<RemixIcon name={item.icon} size={18} margin={8} />) : getLucideIcon(item.icon, { size: 18 }) ,
                   label: item.label ?? item.name ?? "No Name",
                   onClick: () => {
+                    navigate(item.path);
                     setmenuIndex(index + 1);
                     setappIndex(-1);
                     setcurrentIndex(item.label ?? item.name ?? "No Name");
@@ -159,7 +161,7 @@ export default function Sidebar() {
          >
            <Menu
              mode="inline"
-             selectedKeys={appIndex !== -1 ? [appIndex.toString()] : []}
+             selectedKeys={[location.pathname]}
              onClick={(e) => {
                setappIndex(parseInt(e.key));
                setmenuIndex(-1);
@@ -184,10 +186,11 @@ export default function Sidebar() {
                    </div>
                  ),
                  children: appItems.map((item, index) => ({
-                   key: (index + 1).toString(),
+                  key: item.path,
                    icon: getLucideIcon(item.icon, { size: 18 }),
                    label: item.label,
                    onClick: () => {
+                    navigate(item.path);
                      setmenuIndex(index + 1);
                      setappIndex(-1);
                      setcurrentIndex(item.label);
@@ -195,7 +198,11 @@ export default function Sidebar() {
                  })),
                },
              ]}
-             style={{ background: "#001529", paddingTop: "14px" }}
+             style={{ 
+              background: "#001529", 
+              paddingTop: "14px", 
+              paddingBottom: "60px",
+            }}
            />
          </ConfigProvider>
        </Sider>
