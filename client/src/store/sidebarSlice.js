@@ -18,7 +18,7 @@ export const fetchSidebarMenus = createAsyncThunk(
     try {
       const res = await axios.get(url+"/sidebar/menus");
       console.log(res.data);
-      return res.data; // array of menus
+      return res.data;
     } catch (err) {
       return rejectWithValue(
         err.response?.data || "Failed to load sidebar menus"
@@ -46,7 +46,7 @@ const sidebarSlice = createSlice({
       { icon: "CheckSquare", label: "Task", path: "/dashboard/tasks", active: false },
       { icon: "Phone", label: "Contacts", path: "/dashboard/contacts", active: false },
       { icon: "Mail", label: "Emails", path: "/dashboard/emails", active: false },
-      { icon: "Mail", label: "New Menu", path: "/dashboard/create/form", active: false },
+      { icon: "ListPlus", label: "New Menu", path: "/dashboard/create/form", active: false },
       { icon: "Settings", label: "Settings", path: "/dashboard/settings",  active: false }
 
     ]

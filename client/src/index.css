@@ -1,5 +1,40 @@
 @import "tailwindcss";
 
+
+* {
+  font-family: "Heebo", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+body {
+  margin: 0;
+}
+
+/* LIGHT */
+.light {
+  background-color: #f0f2f5;
+  color: #000;
+}
+
+/* DARK */
+.dark {
+  background-color: #0f0f0f;
+  color: #fff;
+}
+
+/* example custom card */
+.dark .custom-card {
+  background: #141414;
+  border: 1px solid #303030;
+}
+
+.light .custom-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+ 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -132,4 +167,18 @@
 .required {
   color: red;
   margin-left: 4px;
+}
+
+/* Inline (expanded sidebar) */
+.ant-menu-inline .ant-menu-item {
+  padding-left: 20px !important;
+}
+
+.ant-menu-submenu-popup .ant-menu-item:hover {
+  background-color: var(--menu-hover-bg, #ffffff) !important;
+  color: var(--menu-hover-color, #37353E) !important;
+}
+.ant-menu-submenu-popup .ant-menu-item-selected {
+  background-color: var(--menu-active-bg, #1890ff) !important;
+  color: var(--menu-active-color, #ffffff) !important;
 }

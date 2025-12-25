@@ -59,7 +59,7 @@ const NewMenu = () => {
           options: [],
           placeholder: 'Your answer',
           gridWidth: 'full', // 'full', 'half', 'third', 'quarter', 'manual'
-          fieldWidthPx: null // stores pixel width when manually resized
+          fieldWidthPx: null 
         }
       ]
     }
@@ -459,8 +459,8 @@ const getSectionInnerWidthPx = (sectionId) => {
 
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
-      <Sidebar />
+      <>
+     {/* <Layout style={{ minHeight: "100vh" }}> */}
       <Modal
         title="Icon Name"
         open={open}
@@ -490,8 +490,7 @@ const getSectionInnerWidthPx = (sectionId) => {
        
       </Modal>
       
-      <Layout>
-        <Content style={{ height: '100vh', overflowY: 'auto' }}>
+        <Content style={{height: '100%', width: '100%',  borderRadius: "16px"}} >
           <div className="bg-gray-100 min-h-screen py-8 px-4">
             <div className="max-w-6xl mx-auto">
               {/* Header */}
@@ -754,8 +753,7 @@ const getSectionInnerWidthPx = (sectionId) => {
           width: 320,
         }}/>}
         </Content>
-      </Layout>
-    </Layout>
+      </>
   );
 };
 

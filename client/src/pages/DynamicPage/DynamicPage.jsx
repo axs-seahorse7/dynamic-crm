@@ -1,53 +1,61 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import FormLayout from "./components/FormLayout";
+import LoaderPage from "../../components/Loading/Loading.jsx";
+import {useQuery} from '@tanstack/react-query'
+import {useSelector} from 'react-redux';
+import NotFound from "../NotFound.jsx";
+
 
 const DynamicPage = () => {
+  const appMenus = useSelector((state) => state.sidebar.apps);
+  const mainMenu = useSelector((state) => state.sidebar.menus);
   const location = useLocation();
+  const navigate = useNavigate();
   const pathname = location.pathname; 
   const url = import.meta.env.VITE_API_URI;
-  const [form, setForm] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchForm(pathname);
-  }, [pathname]);
+  // 1. Normalize the path (ensure it looks like /path)
+  const cleanPath = pathname.replace(/\/$/, "") || "/";
 
-const fetchForm = async (path) => {
-  try {
-    setLoading(true);
-    const res = await axios.get(
-      `${url}/api/form`,
-      {
-        params: {
-          path: path,
-        },
-      }
-    );
+  // 2. Identify static paths
+  const menuPaths = mainMenu.filter(menu => menu.source === 'static').map(menu => menu.path);
+  const appPaths = appMenus.filter(app => app.source === 'static').map(app => app.path);
+  const combinedMenus = [...menuPaths, ...appPaths];
+  const isStaticPath = combinedMenus.includes(cleanPath);
 
-    setForm(res.data.data);   // 👈 backend returns { data: form }
-    console.log("Form PSL -", res.data.data);
+  console.log("Clean Path:", cleanPath);
+  console.log("Is Static Path:", isStaticPath);
 
-  } catch (err) {
-    console.error(
-      err.response?.data?.message || err.message
-    );
-  }finally {
-    setLoading(false);
-  }
-};
+   const { data, isLoading, isError, status } = useQuery({
+    queryKey: ['form', cleanPath],
+    queryFn: async () => {
+       const res = await axios.get(`${url}/api/form`, {
+        params: { path: cleanPath },
+      });
+      return res.data.data;
+    },
+    enabled: !isStaticPath && !!cleanPath,
+    staleTime: 1000 * 60 * 5,
+  });
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>{error}</p>;
-  if (!form) return <p>Form not found</p>;
+  console.log("Dynamic Page Data:", data);
+    
+   if (isStaticPath) return null;
 
+  if (isLoading) return <LoaderPage />;
+
+ if ((status === "success" && !data) || isError) {
+  return <NotFound />; 
+}
+  // E. Final Render
   return (
     <div>
-      <FormLayout form={form} />
+      {data && <FormLayout form={data} />}
     </div>
   );
 };
 
 export default DynamicPage;
+

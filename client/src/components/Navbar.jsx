@@ -1,28 +1,36 @@
-import { useState } from "react";
-import { User,  Minimize, LogOut, Settings, ChevronLeft, Mail, Bell, Search, Maximize, MessageSquareDot } from "lucide-react";
-import {Link} from 'react-router-dom'
+import { use, useState } from "react";
+import { User,  Minimize, Moon, Sun, LogOut, Settings, ChevronLeft, Mail, Bell, Search, Maximize, MessageSquareDot } from "lucide-react";
+import {Link, useLocation, useNavigate} from 'react-router-dom'
 import {useSelector, useDispatch } from "react-redux";
 import { logout } from "../store/authSlice";
 import { useEffect } from "react";
 import { Badge } from "antd";
+import Button from "./Buttons/Buttons.jsx";
 
-export default function Navbar() {
-const dispatch = useDispatch();
+
+export default function Navbar({ toggleTheme, mode }) {
+  const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
-  const pathName = window.location.pathname;
   const [isFullScreen, setisFullScreen] = useState(false)
   const handleScreenSize = () => setisFullScreen(!isFullScreen)
   const user = JSON.parse(localStorage.getItem('user'))
+  const [pathName, setPathName] = useState(window.location.pathname)
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
-  
+  const handleHistory = (path) => {
+    navigate(path)
+  }
+
   function openFullscreen() {
-    let elem = document.documentElement; // fullscreen the whole page
+    let elem = document.documentElement;  
     
     if (elem.requestFullscreen) {
       elem.requestFullscreen();
-    } else if (elem.webkitRequestFullscreen) { // Safari
+    } else if (elem.webkitRequestFullscreen) {  
       elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) { // IE/Edge old
+    } else if (elem.msRequestFullscreen) {  
       elem.msRequestFullscreen();
     }
 
@@ -32,9 +40,9 @@ const dispatch = useDispatch();
 function closeFullscreen() {
   if (document.exitFullscreen) {
     document.exitFullscreen();
-  } else if (document.webkitExitFullscreen) { // Safari
+  } else if (document.webkitExitFullscreen) { 
     document.webkitExitFullscreen();
-  } else if (document.msExitFullscreen) { // IE/Edge old
+  } else if (document.msExitFullscreen) { 
     document.msExitFullscreen();
   }
 }
@@ -56,22 +64,56 @@ useEffect(() => {
     closeFullscreen()
   }
 
-  // if(document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen){
-  //   setisFullScreen(false)
-  // }
-
 }, [isFullScreen]);
 
-  return (
-    <div className="w-full relative bg-white shadow h-full flex items-center justify-between px-6 ">
+useEffect(() => {
+    setPathName(location.pathname);
+  }, [location.pathname]);
 
-      {/* Logo */}
-      <div className="text-md tracking-wider text-gray-600  border border-gray-300 rounded-full px-3 w-[20vw] overflow-hidden flex justify-between items-center gap-1">
-      <Search size={16} />  <input type="text" placeholder="search..." className=" w-[16vw] bg-white outline-none text-sm py-1 " /> 
+
+const formatPathname = (path) => {
+  if (!path || path === "/") return "Dashboard";
+
+  return path
+    .split("/")
+    .filter(Boolean) 
+    // This Regex checks if a segment contains a digit (0-9)
+    // If it has a number, we filter it out (removing IDs like 694bc2...)
+    .filter(segment => !/\d/.test(segment)) 
+    .map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join(" / ");
+};
+
+const isDark = mode === "dark";
+
+useEffect(() => {
+  if(isDarkMode){
+    mode = "dark"
+  } else {
+    mode = "light"
+  }
+}, [isDarkMode]);
+
+
+  return (
+    <div className="w-full relative  select-none h-full flex items-center justify-between px-6 " style={{background : mode === "dark"? "#141414": "white"}}>
+
+      <div className="flex gap-5 items-center">
+        
+       {location.pathname !== "/dashboard" && <button onClick={() => handleHistory(-1)} className="px-4 py-1 rounded-full flex items-center justify-center text-2xl cursor-pointer "><i class="ri-arrow-left-long-line hover:translate-x-[-5px] "></i></button>}
+        <span className={`text-md ${mode === "dark" ? "text-gray-300" : "text-gray-700"}`}> {formatPathname(pathName)} </span>
       </div>
 
       {/* Right Section */}
       <div className="flex items-center gap-4">
+        <div
+         onClick={() => toggleTheme(!isDark)}
+          className="cursor-pointer p-2 hover:bg-gray-100 rounded-full"
+        >
+         {isDark === 'dark' ?<Sun size={18} /> : <Moon size={18} />}
+        </div>
         <div
         onClick={()=> handleScreenSize()}
           className="cursor-pointer p-2 hover:bg-gray-100 rounded-full"
@@ -97,7 +139,7 @@ useEffect(() => {
        
        </Link>
 
-        <span className="font-semibold text-slate-600 border-l border-gray-300 pl-2">{user?.name}</span>
+        <span className={`font-semibold border-l border-gray-300 pl-5 ${mode === "dark" ? "text-gray-300" : "text-slate-600"}`} >{user?.name}</span>
         <div
           onClick={() => setOpen(prev => !prev)}
           className="cursor-pointer p-2 hover:bg-gray-300 bg-gray-200 rounded-full"
@@ -108,7 +150,7 @@ useEffect(() => {
 
       {/* Popup Side Panel */}
       {open && (
-        <div className="absolute right-0 top-14 w-56 bg-white shadow-xl rounded-lg border p-3 animate-slide">
+        <div className="absolute right-0 top-14 z-50 w-56 bg-white shadow-xl rounded-lg border p-3 animate-slide">
           <div className="flex items-center justify-between px-2 pb-2 border-b">
             <span className="font-medium">Account</span>
             <ChevronLeft

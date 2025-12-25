@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { setActiveMenu, setActiveApps, fetchSidebarMenus } from "../store/sidebarSlice";
 import {logout} from '../store/authSlice.js'
 import { useNavigate, useLocation  } from "react-router-dom";
-import { ConfigProvider, Layout, Menu } from "antd";
+import { ConfigProvider, Layout, Menu,  } from "antd";
 const { Content, Header, Sider } = Layout;
 import getLucideIcon from '../LucideIcons/LucideIcons.jsx';
 import RemixIcon from "../assets/Icons/RemixIcon.jsx";
@@ -36,7 +36,7 @@ import RemixIcon from "../assets/Icons/RemixIcon.jsx";
 // } from "lucide-react";
 
 
-export default function Sidebar() {
+export default function Sidebar({ mode }) {
      const menuItems = useSelector((state) => state.sidebar.menus);
      const {loading, error} = useSelector((state) => state.sidebar);
      const appItems = useSelector((state) => state.sidebar.apps);
@@ -82,39 +82,63 @@ export default function Sidebar() {
       dispatch(fetchSidebarMenus());
       }, [dispatch]);
       
-      // console.log("Sidebar menus:", menuItems, loading, error);
 
   return (
        <Sider
          collapsible
          collapsed={collapsed}
          onCollapse={handleCollapse}
-         width={200}
+         width={150}
          style={{
-           background: "#001529",
+           background: mode === "dark" ? "#141414" : "white",
            overflow: "auto",
            height: "100vh",
            paddingBottom:"40px",
            scrollbarWidth: "none",
-           borderRight: "1px solid white",
+           borderRight: "none",
+           border: "none",
          }}
          className="pb-40"
        >
+
+        <div className="text-2xl font-bold px-4 py-4">
+          {collapsed ? (
+            <>
+              <span className={`${mode === "dark"? 'text-gray-100': 'text-gray-950'}`}>R</span>
+              <span className="text-orange-500">W</span>
+            </>
+          ) : (
+            <>
+            <span className={`${mode === "dark"? 'text-gray-100': 'text-gray-950'}`}>Rabbit</span>
+            <span className="text-orange-500">Work</span>
+            </>
+          )}
+        </div>
+
          {/*<<--------------------------  Menu items -------------------->> */}
-         <ConfigProvider
-           theme={{
-             components: {
-               Menu: {
-                 itemColor: "#ffffff",
-                 itemHoverColor: "#1890ff",
-                 itemHoverBg: "#ffffff",
-                 itemSelectedColor: "#ffffff",
-                 itemSelectedBg: "#1890ff",
-                 popupBg: "#001529",
-               },
-             },
-           }}
-         >
+       <ConfigProvider
+          theme={{
+            components: {
+              Menu: {
+                // popup container background
+                popupBg: mode === "dark" ? "#37353E" : "#ffffff",
+
+                // default item text
+                itemColor: mode === "dark" ? "#ffffff" : "#37353E",
+
+                // hover state (inverted)
+                itemHoverBg: mode === "dark" ? "#ffffff" : "#37353E",
+                itemHoverColor: mode === "dark" ? "#37353E" : "#ffffff",
+
+                // selected state (same in both)
+                itemSelectedBg: "#44444E",
+                itemSelectedColor: "#ffffff",
+              },
+            },
+          }}
+        >
+
+
            <Menu
              mode="inline"
              selectedKeys={[location.pathname]}
@@ -122,7 +146,7 @@ export default function Sidebar() {
              onOpenChange={(keys) => {
                setMainMenuOpen(keys.includes("main"));
              }}
-             style={{ background: "#001529", paddingTop: "64px", }}
+             style={{ background: mode === "dark" ? "#141414" : "white", border: "none", }}
             items={[
               {
                 key: "main",
@@ -146,19 +170,30 @@ export default function Sidebar() {
          </ConfigProvider>
  
          {/*<<-------------------------- App menu items -------------------->> */}
-         <ConfigProvider
-           theme={{
-             components: {
-               Menu: {
-                 itemColor: "#ffffff",
-                 itemHoverColor: "#1890ff",
-                 itemHoverBg: "#ffffff",
-                 itemSelectedColor: "#ffffff",
-                 itemSelectedBg: "#1890ff",
-               },
-             },
-           }}
-         >
+          <ConfigProvider
+          theme={{
+            components: {
+              Menu: {
+                // popup container background
+                popupBg: mode === "dark" ? "#37353E" : "#ffffff",
+
+                // default item text
+                itemColor: mode === "dark" ? "#ffffff" : "#37353E",
+
+                // hover state (inverted)
+                itemHoverBg: mode === "dark" ? "#ffffff" : "#37353E",
+                itemHoverColor: mode === "dark" ? "#37353E" : "#ffffff",
+
+                // selected state (same in both)
+                itemSelectedBg: "#44444E",
+                itemSelectedColor: "#ffffff",
+              },
+            },
+          }}
+        >
+
+        
+
            <Menu
              mode="inline"
              selectedKeys={[location.pathname]}
@@ -198,11 +233,8 @@ export default function Sidebar() {
                  })),
                },
              ]}
-             style={{ 
-              background: "#001529", 
-              paddingTop: "14px", 
-              paddingBottom: "60px",
-            }}
+            style={{ background: mode === "dark" ? "#141414" : "white", border: "none", }}
+
            />
          </ConfigProvider>
        </Sider>

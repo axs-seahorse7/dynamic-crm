@@ -20,7 +20,7 @@ const Login = () => {
         e.preventDefault();
         try {
             await dispatch(login(User)).unwrap();
-            navigate('/home');
+            navigate('/dashboard');
         } catch (error) {
             console.log('Login failed:', error);
         }

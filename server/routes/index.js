@@ -14,7 +14,7 @@ router.post("/form/create", validateFormPayload, async (req, res) => {
 
       const form = new Form(req.body);
 
-      form.path = `/${path}/${form._id}`;
+      form.path = `/dashboard/${path}/${form._id}`;
 
       await form.save();
       res.status(201).json({message: "Form created", data: form});
