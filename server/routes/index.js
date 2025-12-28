@@ -4,6 +4,7 @@ import { validateFormPayload } from '../controlers/modules/validator/formValidat
 import FormSubmission from '../db/schemas/DynamicFormData/FormSubmissionSchema.js';
 import { submitForm } from '../controlers/modules/DynamicForm/FormSubmission.js';
 import { upload } from '../Multer/multer.js';
+import { getDynamicData } from '../controlers/modules/DynamicForm/getDynamicData.js';
 var router = express.Router();
 
 router.get('/ai/prompt', function(req, res, next) {
@@ -74,7 +75,7 @@ router.get("/api/form", async (req, res) => {
   }
 });
 
-
 router.post("/api/form/submit", upload.any(), submitForm)
+router.get("/api/form-submissions/:formKey", getDynamicData);
 
 export default router;

@@ -4,7 +4,7 @@ import { fetchNotifications, postMarkRead, postMarkAllRead, deleteNotificationAp
 // import { useAuth } from "../contexts/AuthContext"; // assumes you have this
 
       const user = JSON.parse(localStorage.getItem('user'));
-      console.log("Logged in user:", user);
+      // console.log("Logged in user:", user);
 
 function NotificationItem({ n, onMarkRead, onDelete }) {
   return (

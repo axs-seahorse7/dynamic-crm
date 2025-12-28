@@ -6,7 +6,8 @@ import LoaderPage from "../../components/Loading/Loading.jsx";
 import {useQuery} from '@tanstack/react-query'
 import {useSelector} from 'react-redux';
 import NotFound from "../NotFound.jsx";
-
+import DynamicEntityPage from "./components/DynamicEntity.jsx";
+import { Button } from "antd";
 
 const DynamicPage = () => {
   const appMenus = useSelector((state) => state.sidebar.apps);
@@ -15,6 +16,7 @@ const DynamicPage = () => {
   const navigate = useNavigate();
   const pathname = location.pathname; 
   const url = import.meta.env.VITE_API_URI;
+  const [isFormSubmissionPageVisible, setisFormSubmissionPageVisible] = useState(false);
 
   // 1. Normalize the path (ensure it looks like /path)
   const cleanPath = pathname.replace(/\/$/, "") || "/";
@@ -37,7 +39,9 @@ const DynamicPage = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  console.log("Dynamic Page Data:", data);
+  const handleToogleFormSubmissionPage = (state) => {
+  setisFormSubmissionPageVisible(!isFormSubmissionPageVisible);
+  }
     
   if (isStaticPath) return null;
   if (isLoading) return <LoaderPage />;
@@ -45,7 +49,8 @@ const DynamicPage = () => {
   
   return (
     <div>
-      {data && <FormLayout form={data} />}
+      {!isFormSubmissionPageVisible && <DynamicEntityPage label={data.name} handleTooglePage={handleToogleFormSubmissionPage} currentState={isFormSubmissionPageVisible} />}
+      {isFormSubmissionPageVisible && data && <FormLayout form={data} handleTooglePage={handleToogleFormSubmissionPage}  currentState={isFormSubmissionPageVisible}/>}
     </div>
   );
 };

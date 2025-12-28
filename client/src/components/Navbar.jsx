@@ -98,7 +98,7 @@ useEffect(() => {
 
 
   return (
-    <div className="w-full relative  select-none h-full flex items-center justify-between px-6 " style={{background : mode === "dark"? "#141414": "white"}}>
+    <div className="w-full relative shadow-md select-none h-full flex items-center justify-between px-6 " style={{background : mode === "dark"? "#141414": "#FBFBFB"}}>
 
       <div className="flex gap-5 items-center">
         

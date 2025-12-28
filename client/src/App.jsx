@@ -28,6 +28,7 @@ import DynamicPage from './pages/DynamicPage/DynamicPage.jsx'
 import Layout from './layout/Layout.jsx'
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import DynamicTable from "./pages/DynamicPage/DynamicTable.jsx";
 
 
 

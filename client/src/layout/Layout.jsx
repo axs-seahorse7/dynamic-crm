@@ -34,8 +34,8 @@ const Layouts = ({ mode, toggleTheme }) => {
           <Header style={{ padding: 0, height:"64px" }}>
             <Navbar mode={mode} toggleTheme={toggleTheme} />
           </Header>
-          <Content style={{background: mode === "dark" ? "#141414" :  "white"}} >
-            <div className={`${mode === "dark" ? "bg-gray-800" : "bg-gray-200 "}  rounded-tl-2xl border border-tl-gray-500  w-full overflow-y-auto shadow`} style={{scrollbarWidth:"thin", height:"calc(100vh - 64px)"}} >
+          <Content style={{background: mode === "dark" ? "#141414" :  "#FBFBFB"}} >
+            <div className={`${mode === "dark" ? "bg-zinc-900" : "bg-white "} pl-4  w-full overflow-y-auto shadow`} style={{scrollbarWidth:"thin", height:"calc(100vh - 64px)"}} >
               <Outlet />
             </div>
           </Content>

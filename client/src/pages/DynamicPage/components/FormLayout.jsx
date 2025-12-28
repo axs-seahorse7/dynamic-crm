@@ -32,7 +32,7 @@ const styles = {
   label: { display: 'block', marginBottom: '8px', fontSize: '14px', color: '#434343' }
 };
 
-const FormLayout = ({ form }) => {
+const FormLayout = ({ form, handleTooglePage, currentState }) => {
   if (!form) return null;
   const [formData, setFormData] = useState({});
   const url = import.meta.env.VITE_API_URI;
@@ -42,9 +42,8 @@ const FormLayout = ({ form }) => {
 
   const initialState = {};
   form.fields.forEach(field => {
-    initialState[field.name] = "";
+  initialState[field.name] = "";
   });
-
   setFormData(initialState);
 }, [form]);
 
@@ -83,8 +82,6 @@ const handleSubmit = async () => {
   }
 };
 
-
-
 function slugify(text) {
   return text
     .replace(/\s+/g, "-")      // replace spaces with -
@@ -93,7 +90,6 @@ function slugify(text) {
     .toLowerCase()
     .trim();
 }
-
 
 const renderField = (field) => {
   const commonStyle = field?.fieldWidthPx
@@ -195,14 +191,18 @@ const renderField = (field) => {
   }
 };
 
+const handleToogleBackClick = () => {
+  handleTooglePage(!currentState);
+}
+
 
   return (
     <Card variant={false} style={styles.cardWrapper} styles={{ body: styles.cardBody }}>
       {/* HEADER */}
       <div style={styles.header}>
         <div>
+         <div className="py-5"> <Button onClick={handleToogleBackClick}>Back</Button></div>
           <Title level={3} style={{ margin: 0 }}>{form.name}</Title>
-          <Text type="secondary">Layout Mode: {form.layoutType}</Text>
         </div>
         <Button type="primary" icon={<EditOutlined />}>Edit Form</Button>
       </div>

@@ -7,12 +7,12 @@ export const login = createAsyncThunk(
   'auth/login',
   async ({ email, password }, { rejectWithValue }) => {
     try {
-        const url = import.meta.env.VITE_API_URI;
+      const url = import.meta.env.VITE_API_URI;
       const res = await axios.post(`${url}/api/login`, { email, password });
-      return res.data; // expect { user, token, message }
+      return res.data;
     } catch (err) {
       return rejectWithValue(
-        err.response?.data?.error || 'Login failed. Please try again.'
+      err.response?.data?.error || 'Login failed. Please try again.'
       );
     }
   }
@@ -42,30 +42,30 @@ const authSlice = createSlice({
       const token = localStorage.getItem('token');
       const user = localStorage.getItem('user');
       if (token && user) {
-        state.token = token;
-        state.user = JSON.parse(user);
+      state.token = token;
+      state.user = JSON.parse(user);
       }
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(login.pending, (state) => {
-        state.status = 'loading';
-        state.error = null;
+      state.status = 'loading';
+      state.error = null;
       })
       .addCase(login.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-        state.error = null;
+      state.status = 'succeeded';
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      state.error = null;
 
-        // persist (optional)
-        localStorage.setItem('token', action.payload.token);
-        localStorage.setItem('user', JSON.stringify(action.payload.user));
+      // persist (optional)
+      localStorage.setItem('token', action.payload.token);
+      localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(login.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload || 'Login failed';
+      state.status = 'failed';
+      state.error = action.payload || 'Login failed';
       });
   },
 });
