@@ -1,8 +1,10 @@
 import express from 'express'
 import Form from '../db/schemas/form.schema.js';
 import { validateFormPayload } from '../controlers/modules/validator/formValidator.js';
+import FormSubmission from '../db/schemas/DynamicFormData/FormSubmissionSchema.js';
+import { submitForm } from '../controlers/modules/DynamicForm/FormSubmission.js';
+import { upload } from '../Multer/multer.js';
 var router = express.Router();
-
 
 router.get('/ai/prompt', function(req, res, next) {
   res.json({ message: 'Create Element Endpoint' }); 
@@ -72,5 +74,7 @@ router.get("/api/form", async (req, res) => {
   }
 });
 
+
+router.post("/api/form/submit", upload.any(), submitForm)
 
 export default router;

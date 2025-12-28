@@ -29,16 +29,16 @@ const Layouts = ({ mode, toggleTheme }) => {
     <Layout style={{ minHeight: "100vh", border: "none" }} >
       <Sidebar mode={mode} />
 
-    <div style={{ background: "white",  overflow: "hidden", width: "100%", }} >
-        <Layout >
-        <Header style={{ padding: 0 }}>
-          <Navbar mode={mode} toggleTheme={toggleTheme} />
-        </Header>
-        <Content style={{background: mode === "dark" ? "#141414" :  "white"}} >
-          <div className={`${mode === "dark" ? "bg-gray-800" : "bg-gray-200 "} h-[90vh] px-3 rounded-tl-2xl   py-3 w-full overflow-y-auto shadow`} style={{scrollbarWidth:"thin"}}>
-            <Outlet />
-          </div>
-        </Content>
+    <div style={{ background: mode === "dark" ? "#141414" : "white",  overflow: "hidden", width: "100%", }} >
+      <Layout >
+          <Header style={{ padding: 0, height:"64px" }}>
+            <Navbar mode={mode} toggleTheme={toggleTheme} />
+          </Header>
+          <Content style={{background: mode === "dark" ? "#141414" :  "white"}} >
+            <div className={`${mode === "dark" ? "bg-gray-800" : "bg-gray-200 "}  rounded-tl-2xl border border-tl-gray-500  w-full overflow-y-auto shadow`} style={{scrollbarWidth:"thin", height:"calc(100vh - 64px)"}} >
+              <Outlet />
+            </div>
+          </Content>
       </Layout>
     </div>
     </Layout>

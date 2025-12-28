@@ -111,7 +111,7 @@ console.log('sections', sections);
   // Update section title
   const updateSectionTitle = (sectionId, newTitle) => {
     setSections(sections.map(s => 
-      s.id === sectionId ? { ...s, title: newTitle } : s
+    s.id === sectionId ? { ...s, title: newTitle } : s
     ));
   };
 
@@ -491,10 +491,10 @@ const getSectionInnerWidthPx = (sectionId) => {
       </Modal>
       
         <Content style={{height: '100%', width: '100%',  borderRadius: "16px"}} >
-          <div className="bg-gray-100 min-h-screen py-8 px-4">
+          <div className=" min-h-screen py-8 px-4">
             <div className="max-w-6xl mx-auto">
               {/* Header */}
-              <div className="bg-white flex flex-col rounded-lg shadow-md p-6 mb-6">
+              <div className=" flex flex-col rounded-lg shadow-md p-6 mb-6">
                
                   <div className="flex gap-2 items-center">
                     <button type='text' title='Change icon' onClick={() => setOpen(true)} className='cursor-pointer'><RemixIcon name={icon? icon : "information-2-line"} size={24}/></button>

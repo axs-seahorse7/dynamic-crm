@@ -72,11 +72,7 @@ export default function Sidebar({ mode }) {
     //     FilePlusCorner:<FilePlusCorner size={18} />
     //   };
 
-    useEffect(() => {
-        if (currentIndex == "New Menu") {
-          return navigate("/account/create/form");
-        }
-      }, [currentIndex]);
+
 
     useEffect(() => {
       dispatch(fetchSidebarMenus());

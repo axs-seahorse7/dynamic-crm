@@ -32,7 +32,7 @@ const containerStyle = {
   position: 'fixed',
   top: 0,
   left: 0,
-  backgroundColor: 'rgba(255, 255, 255, 0.9)', // Slight transparency
+  backgroundColor: 'rgba(255, 255, 255, 0.1)', 
   zIndex: 9999, // Ensure it stays on top
 };
 

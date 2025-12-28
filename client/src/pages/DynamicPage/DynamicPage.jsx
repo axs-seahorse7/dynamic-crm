@@ -25,16 +25,13 @@ const DynamicPage = () => {
   const combinedMenus = [...menuPaths, ...appPaths];
   const isStaticPath = combinedMenus.includes(cleanPath);
 
-  console.log("Clean Path:", cleanPath);
-  console.log("Is Static Path:", isStaticPath);
-
-   const { data, isLoading, isError, status } = useQuery({
+  const { data, isLoading, isError, status } = useQuery({
     queryKey: ['form', cleanPath],
     queryFn: async () => {
-       const res = await axios.get(`${url}/api/form`, {
-        params: { path: cleanPath },
-      });
-      return res.data.data;
+    const res = await axios.get(`${url}/api/form`, {
+    params: { path: cleanPath },
+    });
+    return res.data.data;
     },
     enabled: !isStaticPath && !!cleanPath,
     staleTime: 1000 * 60 * 5,
@@ -42,14 +39,10 @@ const DynamicPage = () => {
 
   console.log("Dynamic Page Data:", data);
     
-   if (isStaticPath) return null;
-
+  if (isStaticPath) return null;
   if (isLoading) return <LoaderPage />;
-
- if ((status === "success" && !data) || isError) {
-  return <NotFound />; 
-}
-  // E. Final Render
+  if ((status === "success" && !data) || isError) return <NotFound />; 
+  
   return (
     <div>
       {data && <FormLayout form={data} />}
