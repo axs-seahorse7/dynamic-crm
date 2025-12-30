@@ -24,6 +24,7 @@ import {
 import axios from 'axios';
 import RemixIcon from '../../assets/Icons/RemixIcon.jsx';
 const { Content } = Layout;
+import SelectEntityIntentModal from '../CanvasComponents/SelectEntityType.jsx';
 
 // Field type options
 const FIELD_TYPES = [
@@ -42,8 +43,12 @@ const FIELD_TYPES = [
 const NewMenu = () => {
   const [Name, setName] = useState("Untitled Form")
   const [open, setOpen] = useState(false);
-  const [icon, setIcon] = useState(null);
-
+  const [icon, setIcon] = useState("file-text-line");
+  const savedEntityIntent = JSON.parse(localStorage.getItem("entityIntent"));
+  const [entityIntent, setEntityIntent] = useState(savedEntityIntent ? savedEntityIntent : null);
+  const [intentModalOpen, setIntentModalOpen] = useState(entityIntent === null ? true : false);
+  
+  useEffect(()=>{localStorage.setItem("entityIntent", JSON.stringify(entityIntent))}, [entityIntent])
 
   const intialForm = 
     {
@@ -64,14 +69,14 @@ const NewMenu = () => {
       ]
     }
   
-    const savedForm = JSON.parse(localStorage.getItem("formTemplate"));
-    const [sections, setSections] = useState(savedForm? savedForm : [intialForm]);
+  const savedForm = JSON.parse(localStorage.getItem("formTemplate"));
+  const [sections, setSections] = useState(savedForm? savedForm : [intialForm]);
 
   useEffect(() => {
-    localStorage.setItem("formTemplate", JSON.stringify(sections))
+  localStorage.setItem("formTemplate", JSON.stringify(sections))
   }, [sections])
   
-console.log('sections', sections);
+  console.log('sections', sections);
   const [resizing, setResizing] = useState(null); // { type: 'section'|'field', sectionId, fieldId }
   const [resizeStartData, setResizeStartData] = useState(null);
   const containerRef = useRef(null);
@@ -137,8 +142,8 @@ console.log('sections', sections);
 
   // Handle section resize start
   const handleSectionResizeStart = (sectionId, e) => {
-    e.preventDefault();
-    setResizing({ type: 'section', sectionId });
+  e.preventDefault();
+  setResizing({ type: 'section', sectionId });
   };
 
 
@@ -440,6 +445,7 @@ const getSectionInnerWidthPx = (sectionId) => {
     const response = await axios.post(`${url}/form/create`,{
         name: Name, 
         icon: icon,
+        entityIntent: entityIntent,
         sections: sections 
       },
       {
@@ -452,14 +458,27 @@ const getSectionInnerWidthPx = (sectionId) => {
       message.success(response.data.message)
       setSections([intialForm]);
       localStorage.removeItem("formTemplate");
+      localStorage.removeItem("entityIntent");
+      setName("Untitled Form");
+      setIcon("file-text-line");
+      setEntityIntent(null);
   } catch (error) {
-      message.success(error.response.data.message)
+      message.error(error.message)
   }
 };
 
 
   return (
       <>
+      <SelectEntityIntentModal
+        open={intentModalOpen}
+        onConfirm={(intent) => {
+          setEntityIntent(intent);
+          setIntentModalOpen(false);
+          console.log("Selected intent:", intent);
+        }}
+      />
+
      {/* <Layout style={{ minHeight: "100vh" }}> */}
       <Modal
         title="Icon Name"
@@ -494,8 +513,8 @@ const getSectionInnerWidthPx = (sectionId) => {
           <div className=" min-h-screen py-8 px-4">
             <div className="max-w-6xl mx-auto">
               {/* Header */}
-              <div className=" flex flex-col rounded-lg shadow-md p-6 mb-6">
-               
+              <div className=" flex justify-between rounded-lg shadow-md p-6 mb-6">
+                <section>
                   <div className="flex gap-2 items-center">
                     <button type='text' title='Change icon' onClick={() => setOpen(true)} className='cursor-pointer'><RemixIcon name={icon? icon : "information-2-line"} size={24}/></button>
                     <input 
@@ -505,8 +524,11 @@ const getSectionInnerWidthPx = (sectionId) => {
                     className='focus:border-b  text-2xl text-slate-500 border-gray-200 px-1 outline-none' 
                     />
                   </div>
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">Form Builder</h1>
-                    <p className="text-gray-600">Create your custom form with sections and fields</p>
+                  <p className="text-gray-600">Create your custom form with sections and fields</p>
+                </section>
+                <section>
+                <Button onClick={() => setIntentModalOpen(true)}>Entity {entityIntent?? entityIntent}</Button>
+                </section>
 
               </div>
 

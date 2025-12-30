@@ -28,9 +28,6 @@ router.get("/lead/find/:id", isAuthenticated, leadFind);
 router.put("/lead/update/:id", isAuthenticated, leadsUpdate);
 router.delete("/lead/delete/:id", isAuthenticated, leadsDelete );
 
-// employee routes
-
-
 router.post(
   "/employee",
   isAuthenticated,

@@ -8,33 +8,6 @@ const { Content, Header, Sider } = Layout;
 import getLucideIcon from '../LucideIcons/LucideIcons.jsx';
 import RemixIcon from "../assets/Icons/RemixIcon.jsx";
 
-// import {
-//   Calendar,
-//   House,
-//   LibraryBig,
-//   FileChartLine,
-//   Users,
-//   BriefcaseBusiness,
-//   Settings,
-//   MessageSquare,
-//   LayoutGrid,
-//   Clock,
-//   CheckSquare,
-//   Phone,
-//   Mail,
-//   FileText,
-//   LogOut,
-//   Grid3X3,
-//   ChevronDown,
-//   ChevronsLeft,
-//   LayoutList,
-//   UserRoundPlus,
-//   CreditCard,
-//   Package,
-//   Target,
-//   FilePlusCorner,
-// } from "lucide-react";
-
 
 export default function Sidebar({ mode }) {
     const menuItems = useSelector((state) => state.sidebar.menus);
@@ -130,12 +103,12 @@ export default function Sidebar({ mode }) {
             {
               key: "main",
               icon: getLucideIcon("House", { size: 18 }),
-              label: "Menu",
+              label: "HOME",
               children: menuItems.map((item, index) => ({
                 key: item.path,
                 icon:
                   item.source === "dynamic"
-                    ? <RemixIcon name={item.icon} size={18} />
+                    ? <RemixIcon name={item.icon} size={18} margin={8} />
                     : getLucideIcon(item.icon, { size: 18 }),
                 label: item.label ?? item.name ?? "No Name",
                 onClick: () => {

@@ -1,12 +1,8 @@
 // controllers/notificationController.js
 import mongoose from "mongoose";
-import Notification from "../../db/schemas/notification.schema.js";
+import Notification from "../../db/schemas/Notification/notification.schema.js";
 
-/**
- * GET /api/notifications
- * Query params: page, limit, read (optional)
- * Returns paginated notifications for logged-in user
- */
+
 export const listNotifications = async (req, res) => {
   try {
     const userId = req.query.userId;

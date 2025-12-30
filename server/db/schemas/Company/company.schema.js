@@ -47,12 +47,31 @@ const companySchema = new mongoose.Schema(
       default: "pending",
     },
     tags: [String],
+    premium:{
+      type: Boolean,
+      default: false
+    },
+    premiumExpiryDate: Date,
+    premiumPlan: {
+      type: String,
+      enum: ["basic", "standard", "premium"],
+    },
+    storageUsedInMB: {
+      type: Number,
+      default: 0,
+    },
 
     // Who created this record
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+
+    isDeleted: { type: Boolean, default: false },
+    loginEnabled: { type: Boolean, default: false },
+    passwordHash: { type: String }, 
+    loginTime: { type: Date },
+    logoutTime: { type: Date },
 
     // Optional notes
     notes: String,

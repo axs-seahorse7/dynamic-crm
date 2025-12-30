@@ -8,6 +8,11 @@ const FormSubmissionSchema = new mongoose.Schema(
       ref: "DynamicForm",
       required: true,
     },
+    
+    formEntityType: {
+      type: String, // "user" | "product"
+      required: true,
+    },
 
     formKey: {
       type: String, // "user" | "product"
@@ -23,6 +28,7 @@ const FormSubmissionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

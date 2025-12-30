@@ -7,9 +7,13 @@ import { fileURLToPath } from "url";
 import corse from 'cors'
 import conectDb from './db/config/db.configure.js'
 import notificationsRoutes from "./routes/notification.js";
-
+import superAdminRoutes from './routes/superAdmin.routes.js';
+import createSuperAdmin from './db/schemas/System-Admin/systemAdmin.js';
+import dotenv from 'dotenv'
+dotenv.config();
 
 conectDb()
+// createSuperAdmin();
 
 import indexRouter from './routes/index.js'
 import usersRouter from './routes/users.js'
@@ -35,6 +39,8 @@ app.use("/uploads",express.static(path.join(process.cwd(), "uploads")));
 app.use('/', indexRouter);
 app.use('/api', usersRouter);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api/super-admin", superAdminRoutes);
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

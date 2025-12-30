@@ -65,6 +65,7 @@ const handleSubmit = async () => {
     formDataToSend.append("formKey", form.name);
     formDataToSend.append("data", JSON.stringify(formData));
     formDataToSend.append("createdBy", user._id)
+    formDataToSend.append("formEntityType", entityIntent)
 
     Object.entries(formData).forEach(([key, value]) => {
       if (value instanceof File) {
@@ -227,6 +228,8 @@ const handleToogleBackClick = () => {
         </div>
       ))}
       <Button type="primary" onClick={handleSubmit}>Submit</Button>
+      
+    
     </Card>
   ); 
 };

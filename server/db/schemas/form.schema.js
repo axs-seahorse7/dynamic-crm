@@ -6,6 +6,10 @@ const FormSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
+  entityIntent: {
+    type: String,
+    required: true
+  },
   path: {
     type: String,
     required: true,
@@ -22,6 +26,8 @@ const FormSchema = new mongoose.Schema({
     default: "PSL",
   },
   sections: [SectionSchema],
+  isDeleted: { type: Boolean, default: false },
+  isHidden: { type: Boolean, default: false },
 
   createdAt: { type: Date, default: Date.now },
 });

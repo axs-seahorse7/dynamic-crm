@@ -64,11 +64,6 @@ const UserSchema = new Schema({
  */
 UserSchema.index({ name: "text", email: "text" });
 
-/**
- * Hash password when passwordHash is new or modified
- * NOTE: In many flows you would accept a plain `password` then hash and set `passwordHash`.
- * This implementation hashes when passwordHash changes (adapt to your flow).
- */
 UserSchema.pre("save", async function (next) {
   const user = this;
   if (user.isModified("passwordHash")) {
@@ -78,20 +73,10 @@ UserSchema.pre("save", async function (next) {
   next();
 });
 
-/**
- * Instance helpers
- */
 UserSchema.methods.verifyPassword = function (plain) {
   return bcrypt.compare(plain, this.passwordHash);
 };
 
-/**
- * hasPermission: checks in this order:
- * 1) explicit flags in user.permissions
- * 2) scopes array on user
- * 3) roleRef -> role.scopes (if populated)
- * 4) fallback to role name === 'admin' (superuser)
- */
 UserSchema.methods.hasPermission = function (permissionKey) {
   // 1) boolean flags (e.g. 'canEditLead')
   if (this.permissions && typeof this.permissions[permissionKey] !== "undefined") {

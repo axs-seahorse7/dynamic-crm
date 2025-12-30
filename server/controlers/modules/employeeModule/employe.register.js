@@ -1,5 +1,5 @@
 // controllers/employeeController.js
-import User from "../../../db/schemas/employee.schema.js";
+import User from "../../../db/schemas/Employee/employee.schema.js";
 import { validationResult } from "express-validator";
 
 /**
