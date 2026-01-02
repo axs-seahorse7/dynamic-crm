@@ -42,6 +42,10 @@ const DynamicPage = () => {
   const handleToogleFormSubmissionPage = (state) => {
   setisFormSubmissionPageVisible(!isFormSubmissionPageVisible);
   }
+
+  const handleIsFormSubmit = (value) => {
+   return value === 'submit' ? true : false;
+  }
     
   if (isStaticPath) return null;
   if (isLoading) return <LoaderPage />;
@@ -49,8 +53,8 @@ const DynamicPage = () => {
   
   return (
     <div>
-      {!isFormSubmissionPageVisible && <DynamicEntityPage label={data.name} handleTooglePage={handleToogleFormSubmissionPage} currentState={isFormSubmissionPageVisible} />}
-      {isFormSubmissionPageVisible && data && <FormLayout form={data} handleTooglePage={handleToogleFormSubmissionPage}  currentState={isFormSubmissionPageVisible}/>}
+      {!isFormSubmissionPageVisible && <DynamicEntityPage label={data.name} handleTooglePage={handleToogleFormSubmissionPage} currentState={isFormSubmissionPageVisible} handleIsFormSubmit={handleIsFormSubmit} />}
+      {isFormSubmissionPageVisible && data && <FormLayout form={data} handleTooglePage={handleToogleFormSubmissionPage}  currentState={isFormSubmissionPageVisible} handleIsFormSubmit={handleIsFormSubmit} />}
     </div>
   );
 };

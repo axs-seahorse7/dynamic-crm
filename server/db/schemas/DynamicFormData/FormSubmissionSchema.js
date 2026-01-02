@@ -5,12 +5,7 @@ const FormSubmissionSchema = new mongoose.Schema(
   {
     formId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "DynamicForm",
-      required: true,
-    },
-    
-    formEntityType: {
-      type: String, // "user" | "product"
+      ref: "Form",
       required: true,
     },
 

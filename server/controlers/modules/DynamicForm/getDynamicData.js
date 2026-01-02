@@ -15,7 +15,7 @@ export const getDynamicData = async (req, res) => {
     }
 
     const submissions = await FormSubmissionSchema.find({ formKey })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 }).populate('formId');
 
     return res.status(200).json({
       success: true,
@@ -23,7 +23,7 @@ export const getDynamicData = async (req, res) => {
       data: submissions,
     });
   } catch (error) {
-    console.error("Error fetching form submissions:", error);
+    console.error("Error fetching form submissions:", error.message);
 
     return res.status(500).json({
       success: false,

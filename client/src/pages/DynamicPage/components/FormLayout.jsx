@@ -32,7 +32,7 @@ const styles = {
   label: { display: 'block', marginBottom: '8px', fontSize: '14px', color: '#434343' }
 };
 
-const FormLayout = ({ form, handleTooglePage, currentState }) => {
+const FormLayout = ({ form, handleTooglePage, currentState, handleIsFormSubmit }) => {
   if (!form) return null;
   const [formData, setFormData] = useState({});
   const url = import.meta.env.VITE_API_URI;
@@ -55,17 +55,17 @@ const handleChange = (name, value) => {
 };
 
 const user = JSON.parse(localStorage.getItem('user'));
-console.log("Logged user:", user);
+// console.log("Logged user:", user);
 
 const handleSubmit = async () => {
   try {
     const formDataToSend = new FormData();
+    console.log("Submitting form data:");
 
     formDataToSend.append("formId", form._id);
     formDataToSend.append("formKey", form.name);
     formDataToSend.append("data", JSON.stringify(formData));
-    formDataToSend.append("createdBy", user._id)
-    formDataToSend.append("formEntityType", entityIntent)
+    formDataToSend.append("createdBy", user._id);
 
     Object.entries(formData).forEach(([key, value]) => {
       if (value instanceof File) {
@@ -74,12 +74,13 @@ const handleSubmit = async () => {
     });
 
     const res = await axios.post(`${url}/api/form/submit`,formDataToSend);
-
+    handleIsFormSubmit('submit');
     message.success(res.data.message);
     setFormData({});
 
   } catch (err) {
-    message.error(err.response?.data?.error || "Submission failed");
+    message.error(err.message);
+    console.error("Form submission error:", err.message);
   }
 };
 

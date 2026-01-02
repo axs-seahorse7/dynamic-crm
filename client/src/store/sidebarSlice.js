@@ -14,18 +14,27 @@ const url = import.meta.env.VITE_API_URI;
 /* ------------------ FETCH DYNAMIC MENUS ------------------ */
 export const fetchSidebarMenus = createAsyncThunk(
   "sidebar/fetchMenus",
-  async (_, { rejectWithValue }) => { 
+  async (_, { getState, rejectWithValue }) => {
     try {
-      const res = await axios.get(url+"/sidebar/menus");
-      console.log(res.data);
-      return res.data;
-    } catch (err) {
-      return rejectWithValue(
-        err.response?.data || "Failed to load sidebar menus"
+      const token = getState().auth.token;
+      console.log("TOKEN:", token);
+
+      const res = await axios.get(
+        `${url}/sidebar/menus`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, 
+          },
+        }
       );
+
+      return res.data.menus;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message);
     }
   }
 );
+
 
 
 

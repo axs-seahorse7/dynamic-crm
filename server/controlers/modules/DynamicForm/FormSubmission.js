@@ -2,7 +2,7 @@ import FormSubmissionSchema from "../../../db/schemas/DynamicFormData/FormSubmis
 
 export const submitForm = async (req, res) => {
   try {
-    const { formId, formEntityType, formKey, createdBy } = req.body;
+    const { formId, formKey, createdBy } = req.body;
     const data = JSON.parse(req.body.data || "{}");
     const files = req.files;
 

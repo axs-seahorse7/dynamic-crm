@@ -28,9 +28,10 @@ import DynamicPage from './pages/DynamicPage/DynamicPage.jsx'
 import Layout from './layout/Layout.jsx'
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import CompanyRegister from "./Admin/client-admin/Company/CompanyRegister.jsx";
+import CompanyRegister from "./Admin/Super-Admin/components/Company/CompanyRegister.jsx";
 import SuperAdminProtectedRoute from "./Admin/Super-Admin/Auth/SuperAdminProtectedRoute.jsx";
 import SuperAdminLogin from "./Admin/Super-Admin/AuthPages/AdminLogin.jsx";
+import AdminLayout from './Admin/Layout/Layout.jsx'
 
 
 
@@ -82,10 +83,12 @@ function App() {
         <Route path='/register' element={<Register/>}></Route>
         <Route path='/admin/login' element={<SuperAdminLogin/>}></Route>
 
-          <Route element={<SuperAdminProtectedRoute />}>
+        <Route element={<SuperAdminProtectedRoute />}>
+          <Route element={<AdminLayout />}>
             <Route path="/admin/create/company" element={<CompanyRegister />} />
             <Route path="/admin/dashboard" element={<D />} />
           </Route>
+        </Route>
 
 
         <Route element={<ProtectedRoute><Layout mode={mode} toggleTheme={toggleTheme} /></ProtectedRoute>}>
@@ -117,7 +120,7 @@ function App() {
 
       </Routes>
       </ConfigProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
+      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
     </QueryClientProvider>
     </>
   )

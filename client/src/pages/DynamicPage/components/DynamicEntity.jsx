@@ -1,25 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Button,
-  Spin,
-  Table,
-  Modal,
-  Checkbox,
-  ConfigProvider
-} from "antd";
+import { Button, Spin, Table, Modal, Checkbox, ConfigProvider} from "antd";
 import axios from "axios";
-import {
-  DndContext,
-  closestCenter
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-  arrayMove
-} from "@dnd-kit/sortable";
+import { DndContext, closestCenter} from "@dnd-kit/core";
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-
+import FullViewModal from "../TableViewModal/FullViewModal";
+import PeopleTemplate from "../EntityViewTemplate/PeopleModal";
+import ItemTemplate from "../EntityViewTemplate/ItemViewTemplate";
+import TransactionTemplate from "../EntityViewTemplate/TransactionModal";
+import DocumentTemplate from "../EntityViewTemplate/DocumentTemplate";
+import LogTemplate from "../EntityViewTemplate/LogTemplate";
 /* =========================
    Sortable Row (Modal)
 ========================= */
@@ -33,7 +23,6 @@ const SortableItem = ({ column }) => {
     border: "1px solid #e5e7eb",
     borderRadius: 6,
     marginBottom: 8,
-    background: "#fff",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -52,7 +41,7 @@ const SortableItem = ({ column }) => {
    Main Page
 ========================= */
 
-const DynamicEntityPage = ({ label, handleTooglePage, currentState }) => {
+const DynamicEntityPage = ({ label, handleTooglePage, currentState, handleIsFormSubmit }) => {
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState([]);
   const [columnsConfig, setColumnsConfig] = useState([]);
@@ -60,9 +49,20 @@ const DynamicEntityPage = ({ label, handleTooglePage, currentState }) => {
   const [tempColumns, setTempColumns] = useState([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
-  // console.log("DynamicEntityPage records:", records);
+  const [openViewModal, setOpenViewModal] = useState(false);
+  const [activeRecord, setActiveRecord] = useState(null);
+  const isFormSubmitted = handleIsFormSubmit();
+  
+   const handleView = (record) => {
+  setActiveRecord(record); // full row
+  setOpenViewModal(true);
+};
 
-  const url = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+
+  
+
+  const url = import.meta.env.VITE_API_URI || "http://localhost:3000";
 
   /* =========================
      Helpers
@@ -107,6 +107,7 @@ const DynamicEntityPage = ({ label, handleTooglePage, currentState }) => {
 
   useEffect(() => {
     if (label) loadData(label);
+   
   }, [label]);
 
   /* =========================
@@ -171,59 +172,136 @@ const DynamicEntityPage = ({ label, handleTooglePage, currentState }) => {
      Table Columns
   ========================= */
 
-  const tableColumns = useMemo(() => {
-    const cols = columnsConfig
-      .filter((c) => c.visible)
-      .sort((a, b) => a.order - b.order)
-      .map((col) => ({
-        title: col.title,
-        dataIndex: col.dataIndex,
-        key: col.key,
-        render: (value) => {
-          if (value && typeof value === "object" &&
-          value.path &&value.mimetype
-        ) {
+//   const tableColumns = useMemo(() => {
+//     const cols = columnsConfig
+//       .filter((c) => c.visible)
+//       .sort((a, b) => a.order - b.order)
+//       .map((col) => ({
+//         title: col.title,
+//         dataIndex: col.dataIndex,
+//         key: col.key,
+//         render: (value) => {
+//           if (value && typeof value === "object" &&
+//           value.path &&value.mimetype
+//         ) {
+//           return (
+//           <Button
+//             type="link"
+//             size="small"
+//             onClick={() => {
+//             setPreviewFile(value);
+//             setPreviewOpen(true);
+//             }}
+//             >
+//             View File
+//             </Button>
+//           );
+//         }
+//         return value ?? "-";
+//         }
+
+//       }));
+
+//    cols.push({
+//   title: "Actions",
+//   key: "actions",
+//   fixed: "right",
+//   render: (_, record) => (
+//     <div style={{ display: "flex", gap: 8 }}>
+//       <button
+//         onClick={() => handleView(record)}
+//       >
+//         <i className="ri-eye-line text-cyan-600" />
+//       </button>
+
+//       <i className="ri-pencil-fill text-emerald-600" />
+//       <i className="ri-delete-bin-line text-red-600" />
+//     </div>
+//   )
+// });
+
+
+//     return cols;
+//   }, [columnsConfig]);
+
+//   const tableColumns = useMemo(() => {
+//   return records.map((record) => ({
+//     key: record._id,
+//     _meta: {
+//       formId: record.formId,
+//       formKey: record.formKey,
+//       createdAt: record.createdAt,
+//       updatedAt: record.updatedAt,
+//     },
+//     ...record.data // 👈 ONLY for columns
+//   }));
+// }, [records]);
+
+
+const handleRowView = (row) => {
+  console.log("FULL RECORD:", row.__raw);
+  setActiveRecord(row.__raw); // 👈 FULL RECORD WITH METADATA
+  setOpenViewModal(true);
+};
+
+
+const tableColumns = useMemo(() => {
+  const cols = columnsConfig
+    .filter(c => c.visible)
+    .sort((a, b) => a.order - b.order)
+    .map((col) => ({
+      title: col.title,
+      dataIndex: col.dataIndex,
+      key: col.key,
+      render: (value) => {
+        if (value && typeof value === "object" && value.path) {
           return (
-          <Button
-            type="link"
-            size="small"
-            onClick={() => {
-            setPreviewFile(value);
-            setPreviewOpen(true);
-            }}
+            <Button
+              type="link"
+              size="small"
+              onClick={() => {
+                setPreviewFile(value);
+                setPreviewOpen(true);
+              }}
             >
-            View File
+              View File
             </Button>
           );
         }
         return value ?? "-";
-        }
+      }
+    }));
 
-      }));
+  // ACTIONS
+  cols.push({
+    title: "Actions",
+    key: "actions",
+    fixed: "right",
+    render: (_, row) => (
+      <div style={{ display: "flex", gap: 10 }}>
+        <button onClick={() => handleRowView(row)}>
+          <i className="ri-eye-line text-cyan-600 cursor-pointer"/>
+        </button>
+        <i className="ri-pencil-fill text-emerald-600 cursor-pointer" />
+        <i className="ri-delete-bin-line text-red-600 cursor-pointer" />
+      </div>
+    )
+  });
 
-    cols.push({
-      title: "Actions",
-      key: "actions",
-      fixed: "right",
-      render: () => (
-        <div style={{ display: "flex", gap: 8 }}>
-          <i className="ri-eye-line text-cyan-600" />
-          <i className="ri-pencil-fill text-emerald-600" />
-          <i className="ri-delete-bin-line text-red-600" />
-        </div>
-      )
-    });
+  return cols;
+}, [columnsConfig]);
 
-    return cols;
-  }, [columnsConfig]);
 
-  const dataSource = records.map((r) => ({
-    key: r._id,
-    ...r.data
+const dataSource = useMemo(() => {
+  return records.map((record) => ({
+    key: record._id,
+    __raw: record,   // 👈 STORE FULL METADATA HERE
+    ...record.data   // 👈 ONLY for table columns
   }));
+}, [records]);
 
  
-  console.log("DynamicEntityPage records:", records);
+  // console.log("DynamicEntityPage records:", records);
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
@@ -349,6 +427,12 @@ const DynamicEntityPage = ({ label, handleTooglePage, currentState }) => {
         />
       )}
     </Modal>
+
+    <FullViewModal
+      open={openViewModal}
+      onClose={() => setOpenViewModal(false)}
+      record={activeRecord}
+    />
 
     </div>
   );

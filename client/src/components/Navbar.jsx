@@ -4,7 +4,7 @@ import {Link, useLocation, useNavigate} from 'react-router-dom'
 import {useSelector, useDispatch } from "react-redux";
 import { logout } from "../store/authSlice";
 import { useEffect } from "react";
-import { Badge } from "antd";
+import { Badge, Card } from "antd";
 import Button from "./Buttons/Buttons.jsx";
 
 
@@ -18,6 +18,12 @@ export default function Navbar({ toggleTheme, mode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // console.log("user from nav ",user)
+ const StyleSheet = {
+ box: {background : mode === "dark"? "#141414": "#FBFBFB"},
+  element: {color : mode === "dark"? "#FBFBFB": "#141414", hoverBg: mode === "dark"? "#1F1F1F": "#E5E5E5", display:"flex", alignItems:"center", height:"32px", width:"100%", borderRadius:"9999px", cursor:"pointer", padding:"12px"}
+}
 
   const handleHistory = (path) => {
     navigate(path)
@@ -107,79 +113,101 @@ useEffect(() => {
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4" >
         <div
          onClick={() => toggleTheme(!isDark)}
-          className="cursor-pointer p-2 hover:bg-gray-100 rounded-full"
+          className="cursor-pointer p-2 hover:bg-gray-500 rounded-full"
+          
         >
-         {isDark === 'dark' ?<Sun size={18} /> : <Moon size={18} />}
+         {mode === 'dark' ?<Sun size={18} /> : <Moon size={18} />}
         </div>
         <div
         onClick={()=> handleScreenSize()}
-          className="cursor-pointer p-2 hover:bg-gray-100 rounded-full"
+          className="cursor-pointer p-2 hover:bg-gray-500 rounded-full"
+          
         >
          {isFullScreen ? <Minimize size={16} /> : <Maximize size={16} />}
         </div>
         <div
-          className="cursor-pointer h-8 w-8 justify-center items-center flex hover:bg-gray-100 rounded-full"
+          className="cursor-pointer h-8 w-8 justify-center items-center flex hover:bg-gray-500 rounded-full"
         >
           <Badge count={9} offset={[4, 2]}><Mail size={16} /></Badge>
         </div>
-        <div
-          className="cursor-pointer h-8 w-8 justify-center items-center flex hover:bg-gray-100 rounded-full"
+         <div
+          className="cursor-pointer h-8 w-8 justify-center items-center flex hover:bg-gray-500 rounded-full"
         >
          <Badge count={3} offset={[4, 2]}><MessageSquareDot size={16} /></Badge>
         </div>
-       <Link to="/account/notifications">
-         <div
-          className="cursor-pointer h-8 w-8 justify-center items-center flex hover:bg-gray-100 rounded-full"
-        >
-         <Badge dot> <Bell size={18} /></Badge>
-        </div>
        
-       </Link>
+       
 
-        <span className={`font-semibold border-l border-gray-300 pl-5 ${mode === "dark" ? "text-gray-300" : "text-slate-600"}`} >{user?.name}</span>
-        <div
-          onClick={() => setOpen(prev => !prev)}
-          className="cursor-pointer p-2 hover:bg-gray-300 bg-gray-200 rounded-full"
-        >
-         <User size={18} />
+         <div className="pl-5 flex gap-5 border-l">
+          <Link to="/account/notifications">
+            <div
+              className="cursor-pointer h-8 w-8 justify-center items-center flex hover:bg-gray-500 rounded-full"
+            >
+            <Badge dot> <Bell size={18} /></Badge>
+            </div>
+          </Link>
+
+          <div
+            onClick={() => setOpen(prev => !prev)}
+            className="cursor-pointer p-2 hover:bg-gray-300 bg-gray-200 rounded-full"
+            >
+          <User size={18} />
+          </div>
         </div>
       </div>
 
       {/* Popup Side Panel */}
       {open && (
-        <div className="absolute right-0 top-14 z-50 w-56 bg-white shadow-xl rounded-lg border p-3 animate-slide">
-          <div className="flex items-center justify-between px-2 pb-2 border-b">
-            <span className="font-medium">Account</span>
-            <ChevronLeft
-              size={20}
-              onClick={() => setOpen(false)}
-              className="cursor-pointer"
-            />
+        <div style={{background : mode === "dark"? "#141414": "#FBFBFB"}} className="absolute right-0 top-16 z-50 w-56 bg-white shadow-xl rounded-lg border border-gray-300 p-3 animate-slide">
+        
+          <div className="flex items-center justify-between pb-2">
+           <Card style={{width:"100%"}}>
+             <section style={{display:"flex", width:"100%", gap:"12px", alignItems:"center",}}>
+               <div
+                onClick={() => setOpen(prev => !prev)}
+                className="cursor-pointer h-14 w-14 flex items-center justify-center hover:bg-gray-300 bg-gray-200 rounded-full"
+                >
+              <User size={18} />
+              </div>
+
+              <div>
+               <div className="text-xl">{user?.name}</div>
+              <div>{user?.roleId.name}</div>
+             </div>
+             
+             </section>
+           </Card>
           </div>
 
-          <div className="mt-4 flex flex-col gap-2">
+            <Card>
 
-            <button className="text-left px-3 h-8 flex items-center  hover:bg-gray-100 rounded">
+          <div className=" flex flex-col gap-2">
+
+            <button style={StyleSheet.element}>
               Profile
             </button>
 
-            <button className="text-left px-3 h-8 flex items-center  hover:bg-gray-100 rounded">
+            <button style={StyleSheet.element}>
               Setting
             </button>
             <Link to={"/account/advance-setting"}>
-              <button className="text-left px-3 h-8 flex items-center w-full  hover:bg-gray-100 rounded">
+             {user.roleId.name === "admin" && <button style={StyleSheet.element}>
                 Advance Setting
-              </button>
+              </button>}
             </Link>
-            <button onClick={() => dispatch(logout())} className=" flex text-red-500 items-center gap-3 text-left px-3 h-8  hover:bg-gray-100 rounded">
+            <button onClick={() => dispatch(logout())} style={{...StyleSheet.element, color: "red", gap: "12px"}} >
              <LogOut size={16} /> Log out
             </button>
           </div>
+        </Card>
+
         </div>
       )}
     </div>
   );
 }
+
+

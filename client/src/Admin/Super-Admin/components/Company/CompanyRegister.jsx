@@ -7,23 +7,28 @@ const { Option } = Select;
 const CreateCompany = () => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
-  const url = import.meta.env.VITE_API_URI;
+  const url = import.meta.env.VITE_ADMIN_API_URI;
+
 
   const handleSubmit = async (values) => {
+    console.log(values);
     try {
       setLoading(true);
 
-      await axios.post(url+"/api/company/create", {
+      await axios.post(url+"/company/create", {
         company: {
           name: values.companyName,
           businessEmail: values.businessEmail,
           businessPhone: values.businessPhone,
           industry: values.industry,
+          website: values.website,
+          size: values.employeeSize,
         },
         admin: {
           name: values.adminName,
           email: values.adminEmail,
           password: values.adminPassword,
+          phone: values.adminNumber,
         },
       });
 
@@ -74,6 +79,7 @@ const CreateCompany = () => {
               <Input placeholder="+91 9876543210" />
             </Form.Item>
           </Col>
+         
 
           <Col span={12}>
             <Form.Item label="Industry" name="industry">
@@ -86,7 +92,27 @@ const CreateCompany = () => {
               </Select>
             </Form.Item>
           </Col>
+
+         <Col span={12}>
+            <Form.Item label="Website" name="website">
+              <Input placeholder="https://www.company.com" />
+            </Form.Item>
+          </Col>
+
+          <Col span={12}>
+            <Form.Item label="Employee Size" name="employeeSize">
+              <Select placeholder="Select employee size">
+                <Option value="1-10">1-10</Option>
+                <Option value="11-50">11-50</Option>
+                <Option value="51-200">51-200</Option>
+                <Option value="201-500">201-500</Option>
+                <Option value="Other">500+</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+
         </Row>
+
 
         {/* ADMIN DETAILS */}
         <Card
@@ -115,6 +141,19 @@ const CreateCompany = () => {
                 ]}
               >
                 <Input placeholder="admin@company.com" />
+              </Form.Item>
+            </Col>
+
+            <Col span={12}>
+              <Form.Item
+                label="Admin Number"
+                name="adminNumber"
+                rules={[
+                  { required: true },
+                  { type: "phone", message: "Enter valid phone number" },
+                ]}
+              >
+                <Input placeholder="+91 " />
               </Form.Item>
             </Col>
 

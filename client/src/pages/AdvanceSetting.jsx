@@ -1,20 +1,21 @@
 import { useState } from "react";
-import Navbar from "../components/Navbar";
-import Sidebar from "../components/Sidebar";
 import SettingsMenu from "../components/SettingsMenu";
 import Permissions from "../components/settings/Permissions";
 import CreateNewMenu from "../components/settings/CreateNewMenu";
 import ProfilePanel from "../components/AdvanceSttingMenus/ProfilePanel";
+import CreateRoleForm from "../components/AdvanceSttingMenus/Role-&-Permission/CreateRole";
 
 export default function AdvanceSetting() {
     const [Page, setPage] = useState('Account')
     const [PageValue, setPageValue] = useState("")
+    const user = JSON.parse(localStorage.getItem('user'))
     
   
-
    const handleRecievePage = (page) => {
-        setPage(page);
+    setPage(page);
     }
+
+    console.log("user", user)
 
   return (
     <>
@@ -28,7 +29,9 @@ export default function AdvanceSetting() {
         ): Page === 'Permission' ?(
             <Permissions/>
         ): Page === 'Role & Access' ?(
-            <div>Role & Access -</div>
+            <div className="w-full p-4">
+                <CreateRoleForm companyId={user.companyId} />
+            </div>
         ): Page === 'Add new Menu' ?(
             <div className=" w-full bg-white justify-center items-center border ">
                 <CreateNewMenu />

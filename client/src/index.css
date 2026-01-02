@@ -182,3 +182,12 @@ body {
   background-color: var(--menu-active-bg, #1890ff) !important;
   color: var(--menu-active-color, #ffffff) !important;
 }
+
+.hide-scrollbar {
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

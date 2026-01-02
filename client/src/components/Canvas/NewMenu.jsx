@@ -48,7 +48,9 @@ const NewMenu = () => {
   const [entityIntent, setEntityIntent] = useState(savedEntityIntent ? savedEntityIntent : null);
   const [intentModalOpen, setIntentModalOpen] = useState(entityIntent === null ? true : false);
   
+  
   useEffect(()=>{localStorage.setItem("entityIntent", JSON.stringify(entityIntent))}, [entityIntent])
+  useEffect(()=>{ return localStorage.removeItem("entityIntent")}, [])
 
   const intialForm = 
     {
@@ -82,6 +84,7 @@ const NewMenu = () => {
   const containerRef = useRef(null);
   const sectionRefs = useRef({});
   const url = import.meta.env.VITE_API_URI;
+  
 
 
   // Add new section (always add to bottom)
@@ -538,7 +541,7 @@ const getSectionInnerWidthPx = (sectionId) => {
                   <div
                     key={section.id}
                     style={{ width: `${section.width}%` }}
-                    className="  bg-white rounded-lg shadow-md overflow-hidden relative"
+                    className="   rounded-lg shadow-md overflow-hidden relative"
                   >
                     {/* Resize Handle */}
                     <div
@@ -561,7 +564,7 @@ const getSectionInnerWidthPx = (sectionId) => {
                             className="bg-transparent border-b border-white/30 focus:border-white outline-none flex-1 font-semibold text-lg"
                           />
                         </div>
-                        {sections.length > 2 && (
+                        {sections.length > 1 && (
                           <button
                             onClick={() => deleteSection(section.id)}
                             className="text-white hover:text-red-200 transition-colors"

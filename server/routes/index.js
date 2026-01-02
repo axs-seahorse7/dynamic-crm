@@ -5,6 +5,9 @@ import FormSubmission from '../db/schemas/DynamicFormData/FormSubmissionSchema.j
 import { submitForm } from '../controlers/modules/DynamicForm/FormSubmission.js';
 import { upload } from '../Multer/multer.js';
 import { getDynamicData } from '../controlers/modules/DynamicForm/getDynamicData.js';
+import { createRole } from '../controlers/Create-Role/createRoles.js';
+import { isAuthenticated } from '../middleware/isAuth.js';
+import { loadUser } from '../middleware/loadUser.js';
 var router = express.Router();
 
 router.get('/ai/prompt', function(req, res, next) {
@@ -31,19 +34,46 @@ router.post("/form/create", validateFormPayload, async (req, res) => {
   }
 );
 
-router.get("/sidebar/menus", async (req, res) => { 
+router.get("/sidebar/menus", isAuthenticated, loadUser, async (req, res) => {
     try {
-      const forms = await Form.find();
+      const role = req.user.roleId;
+
+      // console.log("User Role:", role);
+
+      //  SYSTEM ROLE → ALL MENUS
+      if (role.isSystemRole) {
+        const forms = await Form.find();
+        return res.status(200).json({
+          message: "Menus retrieved successfully",
+          menus: forms,
+        });
+      }
+
+      //  GET ALLOWED MENU KEYS (VIEW ONLY)
+      const allowedMenuKeys = role.permissions
+        .filter((p) =>p.module === "menu" && p.actions.includes("view")).map((p) => p.menuKey);
+      // console.log("Allowed Menu Keys:", allowedMenuKeys);
+      //  NO MENU ACCESS
+      if (!allowedMenuKeys.length) {
+        return res.status(200).json({
+          message: "No menu access",
+          menus: [],
+        });
+      }
+
+      // ✅ FETCH ONLY ALLOWED MENUS
+      const forms = await Form.find({ key: { $in: allowedMenuKeys } });
+
       res.status(200).json({
-        message: "Forms retrieved successfully",
-        forms
+        message: "Menus retrieved successfully",
+        menus: forms,
       });
     } catch (err) {
+      console.error(err.message);
       res.status(500).json({
-        message: "Failed to retrieve forms",
-        error: err.message
+        message: "Failed to retrieve menus",
+        error: err.message,
       });
-      console.log(err.message);
     }
   }
 );
@@ -77,5 +107,9 @@ router.get("/api/form", async (req, res) => {
 
 router.post("/api/form/submit", upload.any(), submitForm)
 router.get("/api/form-submissions/:formKey", getDynamicData);
+
+router.post("/api/roles", createRole);
+
+
 
 export default router;
