@@ -20,61 +20,60 @@ export default function Navbar({ toggleTheme, mode }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // console.log("user from nav ",user)
- const StyleSheet = {
- box: {background : mode === "dark"? "#141414": "#FBFBFB"},
-  element: {color : mode === "dark"? "#FBFBFB": "#141414", hoverBg: mode === "dark"? "#1F1F1F": "#E5E5E5", display:"flex", alignItems:"center", height:"32px", width:"100%", borderRadius:"9999px", cursor:"pointer", padding:"12px"}
-}
+  const StyleSheet = {
+  box: {background : mode === "dark"? "#141414": "#FBFBFB"},
+    element: {color : mode === "dark"? "#FBFBFB": "#141414", hoverBg: mode === "dark"? "#1F1F1F": "#E5E5E5", display:"flex", alignItems:"center", height:"32px", width:"100%", borderRadius:"9999px", cursor:"pointer", padding:"12px"}
+  }
 
   const handleHistory = (path) => {
     navigate(path)
   }
 
-  function openFullscreen() {
-    let elem = document.documentElement;  
-    
-    if (elem.requestFullscreen) {
-      elem.requestFullscreen();
-    } else if (elem.webkitRequestFullscreen) {  
-      elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) {  
-      elem.msRequestFullscreen();
-    }
-
-    setisFullScreen(true)
+  async function openFullscreen() {
+  let elem = document.documentElement;  
+  
+  if (elem.requestFullscreen) {
+  await elem.requestFullscreen();
+  } else if (elem.webkitRequestFullscreen) {  
+  await elem.webkitRequestFullscreen();
+  } else if (elem.msRequestFullscreen) {  
+  await elem.msRequestFullscreen();
+  }
+  setisFullScreen(true)
 }
 
-function closeFullscreen() {
+  async function closeFullscreen() {
   if (document.exitFullscreen) {
-    document.exitFullscreen();
+  await document.exitFullscreen();
   } else if (document.webkitExitFullscreen) { 
-    document.webkitExitFullscreen();
+  await  document.webkitExitFullscreen();
   } else if (document.msExitFullscreen) { 
-    document.msExitFullscreen();
+  await document.msExitFullscreen();
   }
 }
 
 useEffect(() => {
   document.addEventListener("fullscreenchange", () => {
-    if (!document.fullscreenElement) {
-      setisFullScreen(false);
-    }
+  if (!document.fullscreenElement) {
+  setisFullScreen(false);
+  }
   });
 }, []);
 
 useEffect(() => {
   if(isFullScreen){
-    openFullscreen()
-  }
+  openFullscreen()
+    }
 
   if(!isFullScreen){
-    closeFullscreen()
-  }
+  closeFullscreen()
+    }
 
 }, [isFullScreen]);
 
 useEffect(() => {
-    setPathName(location.pathname);
-  }, [location.pathname]);
+setPathName(location.pathname);
+}, [location.pathname]);
 
 
 const formatPathname = (path) => {
@@ -83,8 +82,6 @@ const formatPathname = (path) => {
   return path
     .split("/")
     .filter(Boolean) 
-    // This Regex checks if a segment contains a digit (0-9)
-    // If it has a number, we filter it out (removing IDs like 694bc2...)
     .filter(segment => !/\d/.test(segment)) 
     .map(word => 
       word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
@@ -131,16 +128,28 @@ useEffect(() => {
         <div
           className="cursor-pointer h-8 w-8 justify-center items-center flex hover:bg-gray-500 rounded-full"
         >
-          <Badge count={9} offset={[4, 2]}><Mail size={16} /></Badge>
+          <Badge 
+          style={{
+          fontSize: 10,
+          height: 16,
+          minWidth: 16,
+          lineHeight: "16px",
+        }} 
+        count={9} offset={[4, 2]}><Mail size={16} /></Badge>
         </div>
          <div
           className="cursor-pointer h-8 w-8 justify-center items-center flex hover:bg-gray-500 rounded-full"
         >
-         <Badge count={3} offset={[4, 2]}><MessageSquareDot size={16} /></Badge>
+         <Badge 
+         style={{
+          fontSize: 10,
+          height: 16,
+          minWidth: 16,
+          lineHeight: "16px",
+        }} 
+        count={3} offset={[4, 2]}><MessageSquareDot size={16} /></Badge>
         </div>
        
-       
-
          <div className="pl-5 flex gap-5 border-l">
           <Link to="/account/notifications">
             <div

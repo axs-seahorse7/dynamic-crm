@@ -16,11 +16,17 @@ router.get('/ai/prompt', function(req, res, next) {
 
 router.post("/form/create", validateFormPayload, async (req, res) => {
     try {
-      const path = req.body.name.toLowerCase().replace(/\s+/g, '-');
+      const name = req.body.name.toLowerCase().replace(/\s+/g, '-');
+
+      const existName = await Form.findOne({ name: { $regex: `^${name}$`, $options: "i" } });
+
+      if (existName) {
+        return res.status(400).json({ message: "Form name already exists" });
+      }
 
       const form = new Form(req.body);
 
-      form.path = `/dashboard/${path}/${form._id}`;
+      form.path = `/dashboard/${name}/${form._id}`;
 
       await form.save();
       res.status(201).json({message: "Form created", data: form});

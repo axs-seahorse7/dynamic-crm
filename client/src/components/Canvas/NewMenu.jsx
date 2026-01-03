@@ -445,6 +445,11 @@ const getSectionInnerWidthPx = (sectionId) => {
 
   const handleSubmitForm = async () => {
   try {
+    if(Name === "" || Name === "Untitled Form"){
+      message.error("Please provide a valid form name."); 
+      return;
+    }
+
     const response = await axios.post(`${url}/form/create`,{
         name: Name, 
         icon: icon,
@@ -465,8 +470,10 @@ const getSectionInnerWidthPx = (sectionId) => {
       setName("Untitled Form");
       setIcon("file-text-line");
       setEntityIntent(null);
+      setIntentModalOpen(true);
   } catch (error) {
-      message.error(error.message)
+      message.error(error.response?.data?.message)
+      console.error('Error submitting form:', error.response?.data?.message);
   }
 };
 

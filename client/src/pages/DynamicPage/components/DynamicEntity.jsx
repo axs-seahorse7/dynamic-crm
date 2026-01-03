@@ -91,13 +91,14 @@ const DynamicEntityPage = ({ label, handleTooglePage, currentState, handleIsForm
      Fetch Data
   ========================= */
 
-  const loadData = async (formKey) => {
+  const loadData = async (formId) => {
     try {
       setLoading(true);
       const res = await axios.get(
-        `${url}/api/form-submissions/${formKey}`
+        `${url}/api/form-submissions/${formId}`
       );
       setRecords(res.data?.data || []);
+      console.log("Fetched Records:", res.data?.data);
     } catch (err) {
       console.error(err);
     } finally {

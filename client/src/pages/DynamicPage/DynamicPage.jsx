@@ -53,7 +53,7 @@ const DynamicPage = () => {
   
   return (
     <div>
-      {!isFormSubmissionPageVisible && <DynamicEntityPage label={data.name} handleTooglePage={handleToogleFormSubmissionPage} currentState={isFormSubmissionPageVisible} handleIsFormSubmit={handleIsFormSubmit} />}
+      {!isFormSubmissionPageVisible && <DynamicEntityPage label={data._id} handleTooglePage={handleToogleFormSubmissionPage} currentState={isFormSubmissionPageVisible} handleIsFormSubmit={handleIsFormSubmit} />}
       {isFormSubmissionPageVisible && data && <FormLayout form={data} handleTooglePage={handleToogleFormSubmissionPage}  currentState={isFormSubmissionPageVisible} handleIsFormSubmit={handleIsFormSubmit} />}
     </div>
   );

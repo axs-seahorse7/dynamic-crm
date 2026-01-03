@@ -1,6 +1,15 @@
 export const validateFormPayload = (req, res, next) => {
   const { sections } = req.body;
+  const {name, icon} = req.body;
   console.log(req.body);
+
+  if(!name || typeof name !== "string" || name.trim() === "" || name === "Untitled Form"){
+    return res.status(400).json({ message: "Form name is required" });
+  }
+
+  if(!icon || typeof icon !== "string" || icon.trim() === ""){
+    return res.status(400).json({ message: "Form icon is required" });
+  }
 
   if (!Array.isArray(sections) || sections.length === 0) {
     return res.status(400).json({ message: "At least one section is required" });

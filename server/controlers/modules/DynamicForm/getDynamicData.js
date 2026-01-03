@@ -5,16 +5,16 @@ import FormSubmissionSchema from "../../../db/schemas/DynamicFormData/FormSubmis
  */
 export const getDynamicData = async (req, res) => {
   try {
-    const { formKey } = req.params;
+    const { formId } = req.params;
 
-    if (!formKey) {
+    if (!formId) {
       return res.status(400).json({
         success: false,
-        message: "formKey is required",
+        message: "formId is required",
       });
     }
 
-    const submissions = await FormSubmissionSchema.find({ formKey })
+    const submissions = await FormSubmissionSchema.find({ formId })
       .sort({ createdAt: -1 }).populate('formId');
 
     return res.status(200).json({
